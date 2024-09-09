@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools >= 61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "castep_outputs_tools"
+authors = [{name = "Jacob Wilkins", email = "jacob.wilkins@stfc.ac.uk"}]
+dynamic = ["version"]
+requires-python = ">= 3.8"
+readme = "README.rst"
+description = "A set of tools using castep_outputs to post-process data."
+keywords = ["castep", "dft", "parser"]
+license = {text = "BSD-3-Clause"}
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+
+  "Intended Audience :: Science/Research",
+  "Topic :: File Formats :: JSON",
+  "Topic :: Scientific/Engineering :: Physics",
+
+  "License :: OSI Approved :: BSD License",
+
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+]
+dependencies=["castep_outputs"]
+
+[project.optional-dependencies]
+docs = ["sphinx>=0.13.1", "sphinx-book-theme>=0.3.3", "sphinx-argparse>=0.4.0"]
+lint = ["ruff"]
+
+[project.scripts]
+
+[project.urls]
+Homepage="https://github.com/oerc0122/castep_outputs"
+Documentation = "https://oerc0122.github.io/castep_outputs/"
+Repository="https://github.com/oerc0122/castep_outputs_tools.git"
+"Bug Tracker" = "https://github.com/oerc0122/castep_outputs/issues"
+
+[tool.setuptools.dynamic]
+version = {attr = "castep_outputs_tools.__version__"}
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+target-version = "py38"
+
+# Exclude a variety of commonly ignored directories.
+extend-exclude = [
+    ".#*",
+    "__pycache__",
+    "test"
+]
+
+[tool.ruff.lint]
+# Allow unused variables when underscore-prefixed.
+select = [
+    "PL", # Pylint errors
+    "E",   # Pycodestyle
+    "W",   # Pycodestyle warnings
+    "F",   # Pyflakes
+    "B",   # Flake8 bugbear
+    "SIM", # Flake8 Simplify
+    "A",   # Flake8 builtins
+    "COM", # Flake8 commas
+    "ISC", # Flake8 implicit string concat
+    "RSE", # Flake8 raise
+    "FA",  # Flake8 future
+    "FBT", # Flake8 boolean trap
+    "C4",  # Flake8 comprehensions
+    "Q",   # Flake8 Quotes
+    "RET", # Flake8 return
+    "ARG", # Flake8 unused args
+    "PTH", # Flake8 use pathlib
+    "I",   # Isort
+    "RUF", # Ruff specific
+    "FURB",# Refurb
+    "PERF",# Perflint
+    "D",   # Pydocstyle
+    "UP",  # Pyupgrade
+]
+ignore = [
+    "PLR0913",  # Too many arguments
+    "PLR0912",  # Too many branches
+    "PLR0915",  # Too many statements
+    "PLW2901",  # For loop variable overwritten
+    "PLR2004",  # Magic constant value
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.isort]
+profile = "black"
