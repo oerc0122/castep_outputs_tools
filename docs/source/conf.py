@@ -39,6 +39,11 @@ napoleon_use_ivar = True
 napoleon_use_param = False
 napoleon_use_admonition_for_notes = True
 
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "h5py": ("https://docs.h5py.org/en/stable/", None),
+}
+
 numpydoc_validation_checks = {"all", "ES01", "EX01", "SA01"}
 
 # -- Options for HTML output -------------------------------------------------

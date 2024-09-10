@@ -29,16 +29,20 @@ classifiers = [
 dependencies=["castep_outputs"]
 
 [project.optional-dependencies]
-docs = ["sphinx>=0.13.1", "sphinx-book-theme>=0.3.3", "sphinx-argparse>=0.4.0"]
+docs = ["sphinx>=0.13.1", "sphinx-book-theme>=0.3.3", "sphinx-argparse>=0.4.0", "sphinx-autodoc-typehints"]
 lint = ["ruff"]
+md_to_h5md = ["h5py"]
+tools = ["castep_outputs_tools[md_to_h5md]"]
+all = ["castep_outputs_tools[tools, lint, docs]"]
 
 [project.scripts]
+md_to_h5md = "castep_outputs_tools.md_to_h5md:cli"
 
 [project.urls]
-Homepage="https://github.com/oerc0122/castep_outputs"
-Documentation = "https://oerc0122.github.io/castep_outputs/"
+Homepage="https://github.com/oerc0122/castep_outputs_tools"
+Documentation = "https://oerc0122.github.io/castep_outputs_tools/"
 Repository="https://github.com/oerc0122/castep_outputs_tools.git"
-"Bug Tracker" = "https://github.com/oerc0122/castep_outputs/issues"
+"Bug Tracker" = "https://github.com/oerc0122/castep_outputs_tools/issues"
 
 [tool.setuptools.dynamic]
 version = {attr = "castep_outputs_tools.__version__"}
