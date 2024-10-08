@@ -31,7 +31,7 @@ dependencies=["castep_outputs"]
 [project.optional-dependencies]
 docs = ["sphinx>=0.13.1", "sphinx-book-theme>=0.3.3", "sphinx-argparse>=0.4.0", "sphinx-autodoc-typehints"]
 lint = ["ruff"]
-md_to_h5md = ["h5py"]
+md_to_h5md = ["h5py", "pint"]
 tools = ["castep_outputs_tools[md_to_h5md]"]
 all = ["castep_outputs_tools[tools, lint, docs]"]
 
