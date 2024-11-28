@@ -26,7 +26,7 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
 ]
-dependencies=["castep_outputs"]
+dependencies=["castep_outputs>=0.1.8"]
 
 [project.optional-dependencies]
 docs = ["sphinx>=0.13.1", "sphinx-book-theme>=0.3.3", "sphinx-argparse>=0.4.0", "sphinx-autodoc-typehints"]
