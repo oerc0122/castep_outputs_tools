@@ -30,7 +30,7 @@ from castep_outputs_tools.md_geom_parser import MDGeomParser as parser
 UNITS = {
     "ATOMIC": {
         "length": ("a0", 1.),
-        "force": ("Ha a0-1"),
+        "force": ("Ha a0-1", 1.),
         "velocity": ("a0 aut-1", 1.),
         "stress": ("Ha a0-3", 1.),
         "temperature": ("Ha kB-1", 1.),
