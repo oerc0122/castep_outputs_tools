@@ -335,7 +335,7 @@ def _create_groups(out_file: h5py.File, n_steps: int,
     edge.create_dataset("time", (n_steps,), dtype=float)
     edge["time"].attrs["unit"] = UNITS[units]["time"][0]
     edge.create_dataset("value", (n_steps, 3, 3), dtype=float)
-    edge.attrs["unit"] = UNITS[units]["length"][0]
+    edge["value"].attrs["unit"] = UNITS[units]["length"][0]
 
     part_props, props = _get_props(frame, n_steps, n_atoms, units)
 
