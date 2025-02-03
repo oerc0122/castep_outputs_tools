@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest import TestCase, main
 
-from castep_outputs_tools.md_geom_parser import MDGeomParser
+from castep_outputs_tools.md.md_geom_parser import MDGeomParser
 
 class test_md_parser(TestCase):
     FILE = Path(__file__).parent / "test.md"

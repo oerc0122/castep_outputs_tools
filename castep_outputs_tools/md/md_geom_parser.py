@@ -65,10 +65,10 @@ While iteration should work, extracting particular frames may not.
     def get_frame(self, frame: int) -> MDGeomTimestepInfo:
         """Get particular frame of md/geom."""
         if -len(self) > frame > len(self):
-            print("Cannot get {frame}th frame. File only has {len(self)} frames.")
+            print(f"Cannot get {frame}th frame. File only has {len(self)} frames.")
 
         if frame < 0:
-            frame = len(self) - frame
+            frame = len(self) + frame
 
         self._go_to_frame(frame)
 
