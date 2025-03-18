@@ -25,7 +25,7 @@ except ImportError:
 from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 from castep_outputs_tools import __version__
-from castep_outputs_tools.md_geom_parser import MDGeomParser as parser
+from castep_outputs_tools.md.md_geom_parser import MDGeomParser as parser
 
 UNITS = {
     "ATOMIC": {
