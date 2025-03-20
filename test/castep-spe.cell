@@ -1,0 +1,10 @@
+%block positions_frac
+Si	0.0	0.0	0.0
+Si	0.25	0.25	0.25
+%endblock positions_frac
+
+%block lattice_cart
+2.6954645	2.6954645	0.0
+2.6954645	0.0	2.6954645
+0.0	2.6954645	2.6954645
+%endblock lattice_cart

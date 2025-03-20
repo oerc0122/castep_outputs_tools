@@ -20,7 +20,8 @@ def _parse_args() -> argparse.Namespace:
     """Parse CLI Arguments."""
     arg_parser = argparse.ArgumentParser(
         prog="castep2ase",
-        description="Simple .castep, .md, .geom to ASE format tool")
+        description="Simple .castep, .md, .geom to ASE format tool",
+    )
 
     arg_parser.add_argument("file", help="Source file to convert", type=Path)
     arg_parser.add_argument("-o", "--output",
@@ -34,15 +35,12 @@ def _parse_args() -> argparse.Namespace:
 
 def _get_md_geom_struct(parsed: MDGeomTimestepInfo) -> Atoms:
     """Construct atoms from .md or .geom."""
-    from pprint import pprint
-    pprint(parsed)
-    pprint(parsed["lattice_vectors"])
     return Atoms(
         symbols=[symbol for symbol, ind in parsed["ions"]],
         positions=[ion["R"] for ion in parsed["ions"].values()],
         velocities=([ion["V"] for ion in parsed["ions"].values()]
                     if "V" in next(iter(parsed["ions"].values())) else None),
-        cell=parsed["lattice_vectors"],
+        cell=parsed["lattice_vectors"][-3:],
         pbc=True,
     )
 
@@ -60,9 +58,9 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
         data = parsed["geom_opt"]["final_configuration"]
 
         atoms = Atoms(symbols=[symbol for symbol, ind in parsed["initial_positions"]],
-                      positions=(list(data["atoms"].values())
-                                 if "atoms" in data else
-                                 list(parsed["initial_positions"].values())),
+                      scaled_positions=(list(data["atoms"].values())
+                                        if "atoms" in data else
+                                        list(parsed["initial_positions"].values())),
                       cell=(data["cell"]["real_lattice"]
                             if "cell" in data else
                             parsed["initial_cell"]["real_lattice"]),
@@ -73,8 +71,10 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
         source = "Molecular Dynamics"
         data = parsed["md"][-1]
 
+        print(list(data["positions"].values()))
+
         atoms = Atoms(symbols=[symbol for symbol, ind in data["positions"]],
-                      positions=list(data["positions"].values()),
+                      scaled_positions=list(data["positions"].values()),
                       cell=(data["cell"]["real_lattice"]
                             if "cell" in data else
                             parsed["initial_cell"]["real_lattice"]),
@@ -85,7 +85,7 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
         source = "Initial positions"
 
         atoms = Atoms(symbols=[symbol for symbol, ind in parsed["initial_positions"]],
-                      positions=list(parsed["initial_positions"].values()),
+                      scaled_positions=list(parsed["initial_positions"].values()),
                       cell=parsed["initial_cell"]["real_lattice"],
                       velocities=(list(parsed["initial_velocities"].values())
                                   if "initial_velocities" in parsed else None),
