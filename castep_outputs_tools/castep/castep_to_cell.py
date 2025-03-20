@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from operator import itemgetter
 from pathlib import Path
 from typing import Literal, TextIO
 
@@ -32,23 +33,23 @@ def _parse_args():
     return arg_parser.parse_args()
 
 
-def atreg_to_list(dict_in: dict, subelem: str | None = None):
-    """Transform an atreg block to a list."""
-    if subelem is not None:
-        return [(*atom, *pos[subelem])
-                for atom, pos in dict_in.items()
-                if isinstance(atom, tuple)]
+def _nop(x):
+    return x
 
-    return [(*atom, *pos)
-            for atom, pos in dict_in.items()
+def atreg_to_list(dict_in: dict, subelem: str | None = None, *, no_ind = False):
+    """Transform an atreg block to a list."""
+    getter = _nop if subelem is None else itemgetter(subelem)
+
+    return [(*(atom[0:1] if no_ind else atom), *getter(ind))
+            for atom, ind in dict_in.items()
             if isinstance(atom, tuple)]
 
 
-def _get_md_geom_struct(parsed: MDGeomTimestepInfo):
+def _get_md_geom_struct(parsed: MDGeomTimestepInfo) -> dict:
     """Get structure from a parsed .md or .geom file."""
     accum = {}
     accum["lattice_cart"] = parsed["lattice_vectors"]
-    accum["positions_abs"] = atreg_to_list(parsed["ions"], "R")
+    accum["positions_abs"] = atreg_to_list(parsed["ions"], "R", no_ind=True)
     if "V" in next(iter(parsed["ions"].values()), {}):
         accum["ionic_velocities"] = [ion["V"] for ion in parsed["ions"].values()]
 
@@ -67,9 +68,9 @@ def _get_castep_struct(parsed: dict, frame: int = -1):
 
         data = parsed["geom_opt"]["final_configuration"]
         if "atoms" in data:
-            accum["positions_abs"] = atreg_to_list(data["atoms"])
+            accum["positions_frac"] = atreg_to_list(data["atoms"], no_ind=True)
         else:
-            accum["positions_abs"] = atreg_to_list(parsed["initial_positions"])
+            accum["positions_frac"] = atreg_to_list(parsed["initial_positions"], no_ind=True)
 
         if "cell" in data:
             accum["lattice_cart"] = data["cell"]["real_lattice"]
@@ -80,7 +81,7 @@ def _get_castep_struct(parsed: dict, frame: int = -1):
         source = "Molecular Dynamics"
         data = parsed["md"][frame]
 
-        accum["positions_abs"] = atreg_to_list(data["positions"])
+        accum["positions_frac"] = atreg_to_list(data["positions"], no_ind=True)
 
         if "cell" in data:
             accum["lattice_cart"] = data["cell"]["real_lattice"]
@@ -92,7 +93,7 @@ def _get_castep_struct(parsed: dict, frame: int = -1):
             raise ValueError("Reading from a .castep file must take the default frame.")
 
         source = "Initial positions"
-        accum["positions_abs"] = atreg_to_list(parsed["initial_positions"])
+        accum["positions_frac"] = atreg_to_list(parsed["initial_positions"], no_ind=True)
         if "initial_velocities" in parsed:
             accum["ionic_velocities"] = list(parsed["initial_velocities"].values())
         accum["lattice_cart"] = parsed["initial_cell"]["real_lattice"]
