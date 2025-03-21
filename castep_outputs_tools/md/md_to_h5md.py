@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 from functools import singledispatch
 from pathlib import Path
-from typing import Literal
 
 import h5py
 import numpy as np
@@ -26,60 +25,9 @@ from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 from castep_outputs_tools import __version__
 from castep_outputs_tools.md.md_geom_parser import MDGeomParser as parser
+from castep_outputs_tools.utils.unit_converter import UNITS, UnitSchemes, get_unit_name, set_units
+from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
 
-UNITS = {
-    "ATOMIC": {
-        "length": ("a0", 1.),
-        "force": ("Ha a0-1", 1.),
-        "velocity": ("a0 aut-1", 1.),
-        "stress": ("Ha a0-3", 1.),
-        "temperature": ("Ha kB-1", 1.),
-        "energy": ("Ha", 1.),
-        "time": ("aut", 1.),
-    },
-    "CASTEP": {
-        "length": ("Angstrom", 0.529177),
-        "force": ("eV Angstrom-1", 51.421),
-        "velocity": ("Angstrom ps-1", 2.187690392268886),
-        "stress": ("GPa", 2942.0427769057487),
-        "temperature": ("K", 31577.50248),
-        "energy": ("eV", 27.211386245988),
-        "time": ("ps", 241888.4326),
-    },
-    "ELECTRONIC": {
-        "length": ("Angstrom", 0.529177),
-        "force": ("eV Angstrom-1", 51.421),
-        "velocity": ("Angstrom fs-1", 0.002187690392268886),
-        "stress": ("eV Angstrom-3", 183.6278707918808),
-        "temperature": ("K", 31577.50248),
-        "energy": ("eV", 27.211386245988),
-        "time": ("fs", 241.8884326),
-    },
-    "MDANALYSIS": {
-        "length": ("Angstrom", 0.529177),
-        "force": ("kJ mol-1 Angstrom-1", 0.5329426703),
-        "velocity": ("Angstrom ps-1", 2.187690392268886),
-        "stress": ("kJ mol-1 Angstrom-3", 1.9031743412482902),
-        "temperature": ("K", 31577.50248),
-        "energy": ("kJ mol-1", 0.2820269704692934),
-        "time": ("ps", 241888.4326),
-    },
-}
-UnitSchemes = Literal["ATOMIC", "CASTEP", "MDANALYSIS", "ELECTRONIC"]
-
-PROP_UNITS = {
-    "time": "time",
-    "position": "length",
-    "velocity": "velocity",
-    "lattice_velocity": "velocity",
-    "force": "force",
-    "pressure": "stress",
-    "stress": "stress",
-    "temperature": "temperature",
-    "hamiltonian_energy": "energy",
-    "potential_energy": "energy",
-    "kinetic_energy": "energy",
-}
 
 def _dump_config(out_path: str | Path, frame: MDGeomTimestepInfo):
     """
@@ -128,12 +76,14 @@ def _convert_frame(out_file: h5py.File, frame: MDGeomTimestepInfo, frame_id: int
 
     Examples
     --------
-    with h5py.open("out.h5"):
-        _create_header_info(out_file, **metadata)
-        _create_groups(out_file, n_steps, species, atoms, parsed[0])
+    .. code-block:: python
 
-        for i, frame in enumerate(frames):
-            _convert_frame(out_file, frame, i)
+        with h5py.open("out.h5"):
+            _create_header_info(out_file, **metadata)
+            _create_groups(out_file, n_steps, species, atoms, parsed[0])
+
+            for i, frame in enumerate(frames):
+                _convert_frame(out_file, frame, i)
 
     Notes
     -----
@@ -145,29 +95,25 @@ def _convert_frame(out_file: h5py.File, frame: MDGeomTimestepInfo, frame_id: int
     part = out_file["particles/all"]
     obs = out_file["observables"]
 
-    unit_scheme = UNITS[units]
-    def get_fac(key):
-        return unit_scheme[key][1]
+    with set_units(units):
+        frame = convert_units(frame, units)
 
-    part["box/edges/time"][frame_id] = frame["time"] * get_fac("time")
-    part["box/edges/value"][frame_id] = frame["h"] * get_fac("length")
+        part["box/edges/time"][frame_id] = frame["time"]
+        part["box/edges/value"][frame_id] = frame["h"]
 
-    for i, elem in enumerate(frame["ions"].values()):
-        part["position/value"][frame_id, i] = elem["R"] * get_fac("length")
-        part["velocity/value"][frame_id, i] = elem["V"] * get_fac("velocity")
-        part["force/value"][frame_id, i] = elem["F"] * get_fac("force")
+        for i, elem in enumerate(frame["ions"].values()):
+            part["position/value"][frame_id, i] = elem["R"]
+            part["velocity/value"][frame_id, i] = elem["V"]
+            part["force/value"][frame_id, i] = elem["F"]
 
-    for i, prop in enumerate(("hamiltonian_energy", "potential_energy", "kinetic_energy")):
-        obs[f"{prop}/value"][frame_id] = frame["E"][0][i] * get_fac("energy")
+        for i, prop in enumerate(("hamiltonian_energy", "potential_energy", "kinetic_energy")):
+            obs[f"{prop}/value"][frame_id] = frame["E"][0][i]
 
-    obs["temperature/value"][frame_id] = frame["T"] * get_fac("temperature")
+        obs["temperature/value"][frame_id] = frame["T"]
 
-    if "P" in frame:
-        obs["pressure/value"][frame_id] = frame["P"] * get_fac("stress")
-    if "S" in frame:
-        obs["stress/value"][frame_id] = frame["S"] * get_fac("stress")
-    if "hv" in frame:
-        obs["lattice_velocity/value"][frame_id] = frame["hv"] * get_fac("velocity")
+        for key in ("pressure", "stress", "lattice_velocity"):
+            if key in frame:
+                obs[f"{key}/value"] = frame[key]
 
 def _fill_groups(out_file: h5py.File, frames: list[MDGeomTimestepInfo],
                  units: UnitSchemes = "MDANALYSIS"):
@@ -185,10 +131,6 @@ def _fill_groups(out_file: h5py.File, frames: list[MDGeomTimestepInfo],
     units : UnitSchemes
         Units to use.
     """
-    unit_scheme = UNITS[units]
-    def get_fac(key):
-        return unit_scheme[key][1]
-
     part = out_file["particles/all"]
     obs = out_file["observables"]
 
@@ -201,32 +143,34 @@ def _fill_groups(out_file: h5py.File, frames: list[MDGeomTimestepInfo],
     time = np.empty(n_steps)
     edges = np.empty((n_steps, 3, 3))
 
-    for i, frame in tqdm(enumerate(frames), total=len(frames)):
-        time[i] = frame["time"]
-        edges[i, :, :] = frame["h"]
+    with set_units(units):
+        for i, frame in tqdm(enumerate(map(convert_units, frames)),
+                             total=len(frames)):
+            time[i] = frame["time"]
+            edges[i, :, :] = frame["h"]
 
-        for j, ion in enumerate(frame["ions"].values()):
-            part_props["position"][i, j, :] = ion["R"]
-            part_props["velocity"][i, j, :] = ion["V"]
-            part_props["force"][i, j, :] = ion["F"]
+            for j, ion in enumerate(frame["ions"].values()):
+                part_props["position"][i, j, :] = ion["R"]
+                part_props["velocity"][i, j, :] = ion["V"]
+                part_props["force"][i, j, :] = ion["F"]
 
-        for key, val in zip(("hamiltonian_energy", "potential_energy", "kinetic_energy"),
-                            frame["E"][0], strict=True):
-            props[key][i] = val
+            for key, val in zip(("hamiltonian_energy", "potential_energy", "kinetic_energy"),
+                                frame["E"][0], strict=True):
+                props[key][i] = val
 
-        props["temperature"][i] = frame["T"][0][0]
-        for key in ("pressure", "lattice_velocity", "stress"):
-            if key in props:
-                props[key][i, ...] = frame[key]
+            props["temperature"][i] = frame["T"][0][0]
+            for key in ("pressure", "lattice_velocity", "stress"):
+                if key in props:
+                    props[key][i, ...] = frame[key]
 
-    part["box/edges/time"][:] = time * get_fac("time")
-    part["box/edges/value"][:] = edges * get_fac("length")
+    part["box/edges/time"][:] = time
+    part["box/edges/value"][:] = edges
 
     for key, val in part_props.items():
-        part[f"{key}/value"][:] = val * get_fac(PROP_UNITS[key])
+        part[f"{key}/value"][:] = val
 
     for key, val in props.items():
-        obs[f"{key}/value"][:] = val * get_fac(PROP_UNITS[key])
+        obs[f"{key}/value"][:] = val
 
 def _create_header_info(out_file: h5py.File, **metadata):
     """
@@ -264,29 +208,26 @@ def _get_props(frame: MDGeomTimestepInfo, n_steps: int, n_atoms: int,
     units : UnitSchemes
         Units to use.
     """
-    unit_scheme = UNITS[units]
-    def get_unit(key):
-        return unit_scheme[key][0]
+    with set_units(units):
+        part_props = {
+            "position": ((n_steps, n_atoms, 3), get_unit_name("length")),
+            "velocity": ((n_steps, n_atoms, 3), get_unit_name("velocity")),
+            "force": ((n_steps, n_atoms, 3), get_unit_name("force")),
+        }
 
-    part_props = {
-        "position": ((n_steps, n_atoms, 3), get_unit("length")),
-        "velocity": ((n_steps, n_atoms, 3), get_unit("velocity")),
-        "force": ((n_steps, n_atoms, 3), get_unit("force")),
-    }
+        props = {
+            "hamiltonian_energy": ((n_steps,), get_unit_name("energy")),
+            "potential_energy": ((n_steps,), get_unit_name("energy")),
+            "kinetic_energy": ((n_steps,), get_unit_name("energy")),
+            "temperature": ((n_steps,), get_unit_name("temperature")),
+        }
 
-    props = {
-        "hamiltonian_energy": ((n_steps,), get_unit("energy")),
-        "potential_energy": ((n_steps,), get_unit("energy")),
-        "kinetic_energy": ((n_steps,), get_unit("energy")),
-        "temperature": ((n_steps,), get_unit("temperature")),
-    }
-
-    if "pressure" in frame:
-        props["pressure"] = ((n_steps,), get_unit("stress"))
-    if "lattice_velocity" in frame:
-        props["lattice_velocity"] = ((n_steps, 3, 3), get_unit("velocity"))
-    if "stress" in frame:
-        props["stress"] = ((n_steps, 3, 3), get_unit("stress"))
+        if "pressure" in frame:
+            props["pressure"] = ((n_steps,), get_unit_name("stress"))
+        if "lattice_velocity" in frame:
+            props["lattice_velocity"] = ((n_steps, 3, 3), get_unit_name("velocity"))
+        if "stress" in frame:
+            props["stress"] = ((n_steps, 3, 3), get_unit_name("stress"))
 
     return part_props, props
 
@@ -325,27 +266,28 @@ def _create_groups(out_file: h5py.File, n_steps: int,
     spec_enum = h5py.enum_dtype(atom_dict)
     atom_ind = [atom_dict[atm] for atm in atoms]
 
-    part.create_dataset("species", (n_atoms,), dtype=spec_enum, data=atom_ind)
+    with set_units(units):
+        part.create_dataset("species", (n_atoms,), dtype=spec_enum, data=atom_ind)
 
-    box = part.create_group("box")
-    box.attrs["dimension"] = 3
-    box.attrs["boundary"] = "periodic"
-    edge = box.create_group("edges")
-    edge["step"] = list(range(1, n_steps+1))
-    edge.create_dataset("time", (n_steps,), dtype=float)
-    edge["time"].attrs["unit"] = UNITS[units]["time"][0]
-    edge.create_dataset("value", (n_steps, 3, 3), dtype=float)
-    edge["value"].attrs["unit"] = UNITS[units]["length"][0]
+        box = part.create_group("box")
+        box.attrs["dimension"] = 3
+        box.attrs["boundary"] = "periodic"
+        edge = box.create_group("edges")
+        edge["step"] = list(range(1, n_steps+1))
+        edge.create_dataset("time", (n_steps,), dtype=float)
+        edge["time"].attrs["unit"] = get_unit_name("time")
+        edge.create_dataset("value", (n_steps, 3, 3), dtype=float)
+        edge["value"].attrs["unit"] = get_unit_name("length")
 
-    part_props, props = _get_props(frame, n_steps, n_atoms, units)
+        part_props, props = _get_props(frame, n_steps, n_atoms, units)
 
-    for elem, typ in zip((part_props, props), (part, obs), strict=True):
-        for prop, (size, unit) in elem.items():
-            grp = typ.create_group(prop)
-            grp["step"] = edge["step"]
-            grp["time"] = edge["time"]
-            grp.create_dataset("value", size, dtype=float)
-            grp["value"].attrs["unit"] = unit
+        for elem, typ in zip((part_props, props), (part, obs), strict=True):
+            for prop, (size, unit) in elem.items():
+                grp = typ.create_group(prop)
+                grp["step"] = edge["step"]
+                grp["time"] = edge["time"]
+                grp.create_dataset("value", size, dtype=float)
+                grp["value"].attrs["unit"] = unit
 
 def md_to_h5md(md_geom_file: Path, out_path: Path | str, units: str = "MDANALYSIS", *,
                dump_config: bool = False, **metadata) -> None:
