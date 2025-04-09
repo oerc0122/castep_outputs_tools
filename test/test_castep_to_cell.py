@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from castep_outputs.parsers.cell_param_file_parser import parse_cell_param_file as parse
 
-from castep_outputs_tools.castep.castep_to_cell import main as conv
+from castep_outputs_tools.tools.castep.castep_to_cell import main as conv
 
 SELF_DIR = Path(__file__).parent
 FILES = {"md": SELF_DIR / "test.md",
