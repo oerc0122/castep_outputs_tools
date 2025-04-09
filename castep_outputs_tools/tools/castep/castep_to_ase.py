@@ -1,36 +1,40 @@
 """Convert .castep, .md or .geom to ASE atoms objects or dump to file."""
 
 import argparse
-import sys
+from argparse import ArgumentParser
+from argparse import _SubParsersAction as SubParser
 from pathlib import Path
 from typing import Literal
 
 from ase import Atoms
 from ase.io import write
-from ase.io.formats import ioformats
 from castep_outputs import parse_castep_file, parse_md_geom_file, parse_single
 from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
+
+from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
 
 _PARSERS = {"castep": parse_castep_file,
             "md": parse_md_geom_file,
             "geom": parse_md_geom_file}
 
 
-def _parse_args() -> argparse.Namespace:
-    """Parse CLI Arguments."""
-    arg_parser = argparse.ArgumentParser(
-        prog="castep2ase",
-        description="Simple .castep, .md, .geom to ASE format tool",
+def get_parser(parser: SubParser | None = None) -> ArgumentParser:
+    """Get the argument parser for this script."""
+    arg_parser = main_or_sub_parser(
+        parser,
+        name="castep2ase",
+        description="Simple .castep, .md, .geom to ASE format tool.",
+        aliases=("ase",),
     )
 
     arg_parser.add_argument("file", help="Source file to convert", type=Path)
-    arg_parser.add_argument("-o", "--output",
-                            help="File to dump to, default: screen", type=Path, default=sys.stdout)
-    arg_parser.add_argument("-f", "--in-format", help="Parse FILE as this type",
+    arg_parser.add_argument("-o", "--output", help="File to dump to, default: screen",
+                            default=None)
+    arg_parser.add_argument("-f", "--format", help="Parse FILE as this type",
                             choices=_PARSERS.keys())
-    arg_parser.add_argument("-F", "--out-format", help="Dump through ASE as this type",
-                            choices=[key for key, val in ioformats.items() if val.can_write])
-    return arg_parser.parse_args()
+    arg_parser.add_argument("-F", "--frame", help="Parse given frame", type=int, default=-1)
+
+    return arg_parser
 
 
 def _get_md_geom_struct(parsed: MDGeomTimestepInfo) -> Atoms:
@@ -94,7 +98,6 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
 
     return atoms, source
 
-
 def main(source: Path, source_format: Literal["geom", "md", "castep", None] = None) -> Atoms:
     """Convert a CASTEP output file into an ASE atoms object."""
     fmt = source_format if source_format else source.suffix[1:]
@@ -111,11 +114,8 @@ def main(source: Path, source_format: Literal["geom", "md", "castep", None] = No
 
     return atoms
 
-
-def cli():
-    """Convert a CASTEP output file into an ASE atoms object."""
-    args = _parse_args()
-
+def _run(args: argparse.Namespace):
+    """Run the main calculation."""
     file = args.file
     if not file.exists():
         raise FileNotFoundError(f"File {file} not found.")
@@ -125,6 +125,14 @@ def cli():
 
     write(args.output, atoms, args.out_format)
 
+
+def cli():
+    """Convert a CASTEP output file into an ASE atoms object."""
+    arg_parser = get_parser()
+    args = arg_parser.parse_args()
+    _run(args)
+
+_tool_ = Tool(arg_parser=get_parser, run=_run)
 
 if __name__ == "__main__":
     cli()

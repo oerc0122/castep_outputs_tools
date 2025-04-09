@@ -2,6 +2,8 @@
 
 import argparse
 import sys
+from argparse import ArgumentParser
+from argparse import _SubParsersAction as SubParser
 from operator import itemgetter
 from pathlib import Path
 from typing import Literal, TextIO
@@ -9,29 +11,14 @@ from typing import Literal, TextIO
 from castep_outputs import parse_castep_file, parse_md_geom_file, parse_single
 from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
-from castep_outputs_tools.md.md_geom_parser import MDGeomParser
+from castep_outputs_tools.tools.md.md_geom_parser import MDGeomParser
 from castep_outputs_tools.utils.castep_dumper import castep_dumper
+from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
 
 _PARSERS = {"castep": parse_castep_file,
             "md": parse_md_geom_file,
             "geom": parse_md_geom_file}
 Parsers = Literal["castep", "md", "geom"]
-
-def _parse_args():
-    """Parse CLI arguments."""
-    arg_parser = argparse.ArgumentParser(
-        prog="castep2cell",
-        description="Simple .castep, .md, .geom to .cell tool")
-
-    arg_parser.add_argument("file", help="Source file to convert", type=Path)
-    arg_parser.add_argument("-o", "--output", help="File to dump to, default: screen",
-                            default=None)
-    arg_parser.add_argument("-f", "--format", help="Parse FILE as this type",
-                            choices=_PARSERS.keys())
-    arg_parser.add_argument("-F", "--frame", help="Parse given frame", type=int, default=-1)
-
-    return arg_parser.parse_args()
-
 
 def _nop(x):
     return x
@@ -100,13 +87,32 @@ def _get_castep_struct(parsed: dict, frame: int = -1):
 
     return accum, source
 
+
+def get_parser(parser: SubParser | None = None) -> ArgumentParser:
+    """Get the argument parser for this script."""
+    arg_parser = main_or_sub_parser(
+        parser,
+        name="castep2cell",
+        description="Simple .castep, .md, .geom to .cell tool.",
+    )
+
+    arg_parser.add_argument("file", help="Source file to convert", type=Path)
+    arg_parser.add_argument("-o", "--output", help="File to dump to, default: screen",
+                            default=None)
+    arg_parser.add_argument("-f", "--format", help="Parse FILE as this type",
+                            choices=_PARSERS.keys())
+    arg_parser.add_argument("-F", "--frame", help="Parse given frame", type=int, default=-1)
+
+    return arg_parser
+
+
 def main(
         source: str | Path | TextIO,
         out_file: str | Path | TextIO,
         *,
         frame: int = -1,
         source_format: Parsers | None = None,
-):
+) -> None:
     """Convert .castep/.md/.geom to .cell format."""
     if isinstance(source, TextIO):
         name = None
@@ -141,11 +147,8 @@ def main(
 
     castep_dumper(out_file, accum, name, calc)
 
-
-def cli():
-    """Parse file and dump as castep .cell format."""
-    args = _parse_args()
-
+def _run(args: argparse.Namespace) -> None:
+    """Run the main calculation."""
     file = args.file
     if not file.exists():
         raise FileNotFoundError(f"File {file} not found.")
@@ -157,6 +160,14 @@ def cli():
     output = args.output if args.output else sys.stdout
 
     main(file, output, fmt=fmt, frame=args.frame)
+
+def cli() -> None:
+    """Parse file and dump as castep .cell format."""
+    arg_parser = get_parser()
+    args = arg_parser.parse_args()
+    _run(args)
+
+_tool_ = Tool(arg_parser=get_parser, run=_run)
 
 if __name__ == "__main__":
     cli()

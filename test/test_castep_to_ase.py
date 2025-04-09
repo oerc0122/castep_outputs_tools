@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from castep_outputs import parse_cell_param_file
 
-from castep_outputs_tools.castep.castep_to_ase import main as castep_to_ase
+from castep_outputs_tools.tools.castep.castep_to_ase import main as castep_to_ase
 
 SELF_DIR = Path(__file__).parent
 FILES = {"md": SELF_DIR / "test.md",

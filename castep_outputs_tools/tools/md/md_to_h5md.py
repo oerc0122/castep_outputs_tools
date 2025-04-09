@@ -8,11 +8,21 @@ References
 from __future__ import annotations
 
 import argparse
+from argparse import ArgumentParser
+from argparse import _SubParsersAction as SubParser
 from functools import singledispatch
 from pathlib import Path
 
 import h5py
 import numpy as np
+from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
+
+from castep_outputs_tools import __version__
+from castep_outputs_tools.tools.md.md_geom_parser import MDGeomParser as parser
+from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
+from castep_outputs_tools.utils.unit_converter import UNITS, UnitSchemes
+from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
+from castep_outputs_tools.utils.unit_converter import get_unit_name, set_units
 
 try:
     from tqdm import tqdm
@@ -318,6 +328,31 @@ def md_to_h5md(md_geom_file: Path, out_path: Path | str, units: str = "MDANALYSI
         _create_groups(out_file, n_steps, species, atoms, parsed[0], units)
         _fill_groups(out_file, parsed, units)
 
+def get_parser(parser: SubParser | None = None) -> ArgumentParser:
+    """Get the argument parser for this script."""
+    arg_parser = main_or_sub_parser(
+        parser,
+        name="md_to_h5md",
+        description="Convert a castep .md file to .h5md format.",
+        epilog="See https://www.nongnu.org/h5md/ for more info on h5md.",
+        aliases=("h5md",),
+    )
+
+    arg_parser.add_argument("source", type=Path, help=".md file to parse")
+    arg_parser.add_argument("-o", "--output", type=Path,
+                            help="File to write output.", required=True)
+    arg_parser.add_argument("-a", "--author", type=str,
+                            help="Author for metadata.", default="Unknown")
+    arg_parser.add_argument("-e", "--email", type=str,
+                            help="Email for metadata.", default="Unknown")
+    arg_parser.add_argument("-u", "--units",
+                            choices=UNITS.keys(), default="MDANALYSIS",
+                            help="Select units for output h5md file")
+    arg_parser.add_argument("-x", "--dump-config", action="store_true",
+                            help="Dump initial configuration (for MDAnalysis). "
+                            "Dumps to output.with_suffix('.config').")
+    return arg_parser
+
 @singledispatch
 def main(source, output, **metadata):
     """
@@ -345,6 +380,11 @@ def _(source, output: Path | str, **metadata):
 def _(source, output: Path | str, **metadata):
     md_to_h5md(source, output, **metadata)
 
+@main.register(argparse.Namespace)
+def _(args):
+    main(args.source, args.output, units=args.units, dump_config=args.dump_config,
+         author=args.author, email=args.email)
+
 def cli():
     """
     Run md_to_h5md through command line.
@@ -356,31 +396,11 @@ def cli():
        md_to_h5md -o my_file.h5md my_input.md
        md_to_h5md --author "Jacob Wilkins" --email "e.mail@email.org" -o my_file.h5md my_input.md
     """
-    arg_parser = argparse.ArgumentParser(
-        prog="md_to_h5md",
-        description="Convert a castep .md file to .h5md format.",
-        epilog="See https://www.nongnu.org/h5md/ for more info on h5md.",
-    )
-    arg_parser.add_argument("source", type=Path, help=".md file to parse")
-    arg_parser.add_argument("-o", "--output", type=Path,
-                            help="File to write output.", required=True)
-    arg_parser.add_argument("-a", "--author", type=str,
-                            help="Author for metadata.", default="Unknown")
-    arg_parser.add_argument("-e", "--email", type=str,
-                            help="Email for metadata.", default="Unknown")
-    arg_parser.add_argument("-V", "--version", action="version", version=f"%(prog)s v{__version__}")
-    arg_parser.add_argument("-u", "--units",
-                            choices=UnitSchemes.__members__.keys(),
-                            default="MDANALYSIS",
-                            help="Select units for output h5md file")
-    arg_parser.add_argument("-x", "--dump-config", action="store_true",
-                            help="Dump initial configuration (for MDAnalysis). "
-                            "Dumps to output.with_suffix('.config').")
+    arg_parser = get_parser()
     args = arg_parser.parse_args()
+    main(args)
 
-    main(args.source, args.output, units=args.units, dump_config=args.dump_config,
-         author=args.author, email=args.email)
-
+_tool_ = Tool(arg_parser=get_parser, run=main)
 
 if __name__ == "__main__":
     cli()
