@@ -3,7 +3,6 @@
 import argparse
 import sys
 from argparse import ArgumentParser
-from argparse import _SubParsersAction as SubParser
 from operator import itemgetter
 from pathlib import Path
 from typing import Literal, TextIO
@@ -13,7 +12,7 @@ from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 from castep_outputs_tools.tools.md.md_geom_parser import MDGeomParser
 from castep_outputs_tools.utils.castep_dumper import castep_dumper
-from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
+from castep_outputs_tools.utils.tool import Tool
 
 _PARSERS = {"castep": parse_castep_file,
             "md": parse_md_geom_file,
@@ -88,11 +87,10 @@ def _get_castep_struct(parsed: dict, frame: int = -1):
     return accum, source
 
 
-def get_parser(parser: SubParser | None = None) -> ArgumentParser:
+def get_parser() -> ArgumentParser:
     """Get the argument parser for this script."""
-    arg_parser = main_or_sub_parser(
-        parser,
-        name="castep2cell",
+    arg_parser = ArgumentParser(
+        prog="castep2cell",
         description="Simple .castep, .md, .geom to .cell tool.",
     )
 

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 from argparse import ArgumentParser
-from argparse import _SubParsersAction as SubParser
 from functools import singledispatch
 from pathlib import Path
 
@@ -19,7 +18,7 @@ from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 from castep_outputs_tools import __version__
 from castep_outputs_tools.tools.md.md_geom_parser import MDGeomParser as parser
-from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
+from castep_outputs_tools.utils.tool import Tool
 from castep_outputs_tools.utils.unit_converter import UNITS, UnitSchemes
 from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
 from castep_outputs_tools.utils.unit_converter import get_unit_name, set_units
@@ -328,14 +327,12 @@ def md_to_h5md(md_geom_file: Path, out_path: Path | str, units: str = "MDANALYSI
         _create_groups(out_file, n_steps, species, atoms, parsed[0], units)
         _fill_groups(out_file, parsed, units)
 
-def get_parser(parser: SubParser | None = None) -> ArgumentParser:
+def get_parser() -> ArgumentParser:
     """Get the argument parser for this script."""
-    arg_parser = main_or_sub_parser(
-        parser,
-        name="md_to_h5md",
+    arg_parser = ArgumentParser(
+        prog="md_to_h5md",
         description="Convert a castep .md file to .h5md format.",
         epilog="See https://www.nongnu.org/h5md/ for more info on h5md.",
-        aliases=("h5md",),
     )
 
     arg_parser.add_argument("source", type=Path, help=".md file to parse")
@@ -400,7 +397,7 @@ def cli():
     args = arg_parser.parse_args()
     main(args)
 
-_tool_ = Tool(arg_parser=get_parser, run=main)
+_tool_ = Tool(arg_parser=get_parser, run=main, aliases=["h5md"])
 
 if __name__ == "__main__":
     cli()

@@ -2,7 +2,6 @@
 
 import argparse
 from argparse import ArgumentParser
-from argparse import _SubParsersAction as SubParser
 from pathlib import Path
 from typing import Literal
 
@@ -11,20 +10,18 @@ from ase.io import write
 from castep_outputs import parse_castep_file, parse_md_geom_file, parse_single
 from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
-from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
+from castep_outputs_tools.utils.tool import Tool
 
 _PARSERS = {"castep": parse_castep_file,
             "md": parse_md_geom_file,
             "geom": parse_md_geom_file}
 
 
-def get_parser(parser: SubParser | None = None) -> ArgumentParser:
+def get_parser() -> ArgumentParser:
     """Get the argument parser for this script."""
-    arg_parser = main_or_sub_parser(
-        parser,
-        name="castep2ase",
+    arg_parser = ArgumentParser(
+        prog="castep2ase",
         description="Simple .castep, .md, .geom to ASE format tool.",
-        aliases=("ase",),
     )
 
     arg_parser.add_argument("file", help="Source file to convert", type=Path)
@@ -132,7 +129,7 @@ def cli():
     args = arg_parser.parse_args()
     _run(args)
 
-_tool_ = Tool(arg_parser=get_parser, run=_run)
+_tool_ = Tool(arg_parser=get_parser, run=_run, aliases=["ase"])
 
 if __name__ == "__main__":
     cli()
