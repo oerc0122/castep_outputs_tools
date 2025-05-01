@@ -8,8 +8,8 @@ from typing import Literal, TextIO
 
 from castep_outputs import parse_castep_file, parse_md_geom_file, parse_single
 from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
+from castep_outputs.tools.md_geom_parser import MDGeomParser
 
-from castep_outputs_tools.md.md_geom_parser import MDGeomParser
 from castep_outputs_tools.utils.castep_dumper import castep_dumper
 
 _PARSERS = {"castep": parse_castep_file,
