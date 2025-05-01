@@ -1,9 +1,7 @@
 """User-facing frontend for castep_outputs_tools."""
 
 import argparse
-from argparse import ArgumentParser
 from argparse import _SubParsersAction as SubParser
-from collections.abc import Sequence
 from pkgutil import resolve_name, walk_packages
 
 import castep_outputs_tools
@@ -12,7 +10,8 @@ from castep_outputs_tools.utils.tool import Tool
 
 
 def main_to_sub_parser(
-    sub_parser: SubParser, tool: Tool,
+    sub_parser: SubParser,
+    tool: Tool,
 ) -> None:
     """Turn a parser into a subparser.
 
@@ -46,6 +45,7 @@ def main_to_sub_parser(
     new_parser._actions = parser._actions
     new_parser.set_defaults(func=tool.run)
     return new_parser
+
 
 def main():
     """User facing frontend.

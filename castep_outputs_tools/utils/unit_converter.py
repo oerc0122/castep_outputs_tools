@@ -28,6 +28,7 @@ Dimensions = Literal[
 ]
 
 
+
 @dataclass(frozen=True)
 class Unit:
     """Basic unit holder."""
@@ -264,6 +265,7 @@ add_aliases(MD_PROP_UNITS, TAG_ALIASES)
 
 # Singleton config
 UNIT_SCHEME: UnitScheme = UnitSchemes.MDANALYSIS.value
+
 
 
 @contextmanager
