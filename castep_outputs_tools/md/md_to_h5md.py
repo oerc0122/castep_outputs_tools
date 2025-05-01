@@ -21,12 +21,17 @@ except ImportError:
         """Return dummy function for tqdm."""
         yield from x
 
-from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
+
+from typing import TYPE_CHECKING
+
+from castep_outputs.tools.md_geom_parser import MDGeomParser as parser
 
 from castep_outputs_tools import __version__
-from castep_outputs_tools.md.md_geom_parser import MDGeomParser as parser
 from castep_outputs_tools.utils.unit_converter import UnitSchemes, get_unit_name, set_units
 from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
+
+if TYPE_CHECKING:
+    from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 
 def _dump_config(out_path: str | Path, frame: MDGeomTimestepInfo):
