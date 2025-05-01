@@ -2,7 +2,7 @@
 
 from argparse import ArgumentParser, Namespace
 from argparse import _SubParsersAction as SubParser
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -20,12 +20,14 @@ class Tool:
     arg_parser: Callable[[SubParser | None], ArgumentParser]
 
 
-def main_or_sub_parser(parser: SubParser | None = None,
-                       *,
-                       name: str,
-                       description: str,
-                       aliases: Sequence[str] = (),
-                       **kwargs) -> ArgumentParser:
+def main_or_sub_parser(
+    parser: SubParser | None = None,
+    *,
+    name: str,
+    description: str,
+    aliases: Sequence[str] = (),
+    **kwargs,
+) -> ArgumentParser:
     """Get a parser from parameters.
 
     If there is not an existing parser create a new
@@ -47,7 +49,6 @@ def main_or_sub_parser(parser: SubParser | None = None,
     ArgumentParser
         Parser/Subparser ready to add args.
     """
-
     if parser is None:
         return ArgumentParser(
             prog=name,

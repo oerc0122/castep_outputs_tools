@@ -13,9 +13,7 @@ from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
 
-_PARSERS = {"castep": parse_castep_file,
-            "md": parse_md_geom_file,
-            "geom": parse_md_geom_file}
+_PARSERS = {"castep": parse_castep_file, "md": parse_md_geom_file, "geom": parse_md_geom_file}
 
 
 def get_parser(parser: SubParser | None = None) -> ArgumentParser:
@@ -28,10 +26,10 @@ def get_parser(parser: SubParser | None = None) -> ArgumentParser:
     )
 
     arg_parser.add_argument("file", help="Source file to convert", type=Path)
-    arg_parser.add_argument("-o", "--output", help="File to dump to, default: screen",
-                            default=None)
-    arg_parser.add_argument("-f", "--format", help="Parse FILE as this type",
-                            choices=_PARSERS.keys())
+    arg_parser.add_argument("-o", "--output", help="File to dump to, default: screen", default=None)
+    arg_parser.add_argument(
+        "-f", "--format", help="Parse FILE as this type", choices=_PARSERS.keys(),
+    )
     arg_parser.add_argument("-F", "--frame", help="Parse given frame", type=int, default=-1)
 
     return arg_parser
@@ -42,8 +40,11 @@ def _get_md_geom_struct(parsed: MDGeomTimestepInfo) -> Atoms:
     return Atoms(
         symbols=[symbol for symbol, ind in parsed["ions"]],
         positions=[ion["R"] for ion in parsed["ions"].values()],
-        velocities=([ion["V"] for ion in parsed["ions"].values()]
-                    if "V" in next(iter(parsed["ions"].values())) else None),
+        velocities=(
+            [ion["V"] for ion in parsed["ions"].values()]
+            if "V" in next(iter(parsed["ions"].values()))
+            else None
+        ),
         cell=parsed["lattice_vectors"][-3:],
         pbc=True,
     )
@@ -56,20 +57,26 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
     if "geom_opt" in parsed:
         source = "Geometry Optimisation"
         if "final_configuration" not in parsed["geom_opt"]:
-            raise KeyError("Cannot find final configuration, "
-                           "are you sure your geom opt ran to completion?")
+            raise KeyError(
+                "Cannot find final configuration, are you sure your geom opt ran to completion?",
+            )
 
         data = parsed["geom_opt"]["final_configuration"]
 
-        atoms = Atoms(symbols=[symbol for symbol, ind in parsed["initial_positions"]],
-                      scaled_positions=(list(data["atoms"].values())
-                                        if "atoms" in data else
-                                        list(parsed["initial_positions"].values())),
-                      cell=(data["cell"]["real_lattice"]
-                            if "cell" in data else
-                            parsed["initial_cell"]["real_lattice"]),
-                      pbc=True,
-                      )
+        atoms = Atoms(
+            symbols=[symbol for symbol, ind in parsed["initial_positions"]],
+            scaled_positions=(
+                list(data["atoms"].values())
+                if "atoms" in data
+                else list(parsed["initial_positions"].values())
+            ),
+            cell=(
+                data["cell"]["real_lattice"]
+                if "cell" in data
+                else parsed["initial_cell"]["real_lattice"]
+            ),
+            pbc=True,
+        )
 
     elif "md" in parsed and "positions" in parsed["md"]:
         source = "Molecular Dynamics"
@@ -77,26 +84,34 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
 
         print(list(data["positions"].values()))
 
-        atoms = Atoms(symbols=[symbol for symbol, ind in data["positions"]],
-                      scaled_positions=list(data["positions"].values()),
-                      cell=(data["cell"]["real_lattice"]
-                            if "cell" in data else
-                            parsed["initial_cell"]["real_lattice"]),
-                      pbc=True,
-                      )
+        atoms = Atoms(
+            symbols=[symbol for symbol, ind in data["positions"]],
+            scaled_positions=list(data["positions"].values()),
+            cell=(
+                data["cell"]["real_lattice"]
+                if "cell" in data
+                else parsed["initial_cell"]["real_lattice"]
+            ),
+            pbc=True,
+        )
 
     else:
         source = "Initial positions"
 
-        atoms = Atoms(symbols=[symbol for symbol, ind in parsed["initial_positions"]],
-                      scaled_positions=list(parsed["initial_positions"].values()),
-                      cell=parsed["initial_cell"]["real_lattice"],
-                      velocities=(list(parsed["initial_velocities"].values())
-                                  if "initial_velocities" in parsed else None),
-                      pbc=True,
-                      )
+        atoms = Atoms(
+            symbols=[symbol for symbol, ind in parsed["initial_positions"]],
+            scaled_positions=list(parsed["initial_positions"].values()),
+            cell=parsed["initial_cell"]["real_lattice"],
+            velocities=(
+                list(parsed["initial_velocities"].values())
+                if "initial_velocities" in parsed
+                else None
+            ),
+            pbc=True,
+        )
 
     return atoms, source
+
 
 def main(source: Path, source_format: Literal["geom", "md", "castep", None] = None) -> Atoms:
     """Convert a CASTEP output file into an ASE atoms object."""
@@ -113,6 +128,7 @@ def main(source: Path, source_format: Literal["geom", "md", "castep", None] = No
         atoms, _ = _get_castep_struct(parsed)
 
     return atoms
+
 
 def _run(args: argparse.Namespace):
     """Run the main calculation."""
@@ -131,6 +147,7 @@ def cli():
     arg_parser = get_parser()
     args = arg_parser.parse_args()
     _run(args)
+
 
 _tool_ = Tool(arg_parser=get_parser, run=_run)
 

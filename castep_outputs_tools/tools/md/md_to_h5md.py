@@ -5,6 +5,7 @@ References
 ----------
 .. [1] https://www.nongnu.org/h5md/
 """
+
 from __future__ import annotations
 
 import argparse
@@ -20,13 +21,13 @@ from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 from castep_outputs_tools import __version__
 from castep_outputs_tools.tools.md.md_geom_parser import MDGeomParser as parser
 from castep_outputs_tools.utils.tool import Tool, main_or_sub_parser
-from castep_outputs_tools.utils.unit_converter import UNITS, UnitSchemes
+from castep_outputs_tools.utils.unit_converter import UNITS, UnitSchemes, get_unit_name, set_units
 from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
-from castep_outputs_tools.utils.unit_converter import get_unit_name, set_units
 
 try:
     from tqdm import tqdm
 except ImportError:
+
     def tqdm(x, *_args, **_kwargs):
         """Return dummy function for tqdm."""
         yield from x
@@ -61,8 +62,13 @@ def _dump_config(out_path: str | Path, frame: MDGeomTimestepInfo):
             for vec in ("R", "V", "F"):
                 print("".join(map("{:20.10f}".format, ion[vec])), file=out_file)
 
-def _convert_frame(out_file: h5py.File, frame: MDGeomTimestepInfo, frame_id: int,
-                   units: UnitSchemes = "MDANALYSIS"):
+
+def _convert_frame(
+    out_file: h5py.File,
+    frame: MDGeomTimestepInfo,
+    frame_id: int,
+    units: UnitSchemes = "MDANALYSIS",
+):
     """
     Convert a single frame and fill the data blocks.
 
@@ -118,8 +124,12 @@ def _convert_frame(out_file: h5py.File, frame: MDGeomTimestepInfo, frame_id: int
             if key in frame:
                 obs[f"{key}/value"] = frame[key]
 
-def _fill_groups(out_file: h5py.File, frames: list[MDGeomTimestepInfo],
-                 units: UnitSchemes = "MDANALYSIS"):
+
+def _fill_groups(
+    out_file: h5py.File,
+    frames: list[MDGeomTimestepInfo],
+    units: UnitSchemes = "MDANALYSIS",
+):
     """
     Convert frames and fill the data blocks.
 
@@ -147,8 +157,7 @@ def _fill_groups(out_file: h5py.File, frames: list[MDGeomTimestepInfo],
     edges = np.empty((n_steps, 3, 3))
 
     with set_units(units):
-        for i, frame in tqdm(enumerate(map(convert_units, frames)),
-                             total=len(frames)):
+        for i, frame in tqdm(enumerate(map(convert_units, frames)), total=len(frames)):
             time[i] = frame["time"]
             edges[i, :, :] = frame["h"]
 
@@ -157,8 +166,11 @@ def _fill_groups(out_file: h5py.File, frames: list[MDGeomTimestepInfo],
                 part_props["velocity"][i, j, :] = ion["V"]
                 part_props["force"][i, j, :] = ion["F"]
 
-            for key, val in zip(("hamiltonian_energy", "potential_energy", "kinetic_energy"),
-                                frame["E"][0], strict=True):
+            for key, val in zip(
+                ("hamiltonian_energy", "potential_energy", "kinetic_energy"),
+                frame["E"][0],
+                strict=True,
+            ):
                 props[key][i] = val
 
             props["temperature"][i] = frame["T"][0][0]
@@ -174,6 +186,7 @@ def _fill_groups(out_file: h5py.File, frames: list[MDGeomTimestepInfo],
 
     for key, val in props.items():
         obs[f"{key}/value"][:] = val
+
 
 def _create_header_info(out_file: h5py.File, **metadata):
     """
@@ -195,8 +208,13 @@ def _create_header_info(out_file: h5py.File, **metadata):
     crea.attrs["name"] = "castep outputs"
     crea.attrs["version"] = __version__
 
-def _get_props(frame: MDGeomTimestepInfo, n_steps: int, n_atoms: int,
-               units: UnitSchemes = "MDANALYSIS"):
+
+def _get_props(
+    frame: MDGeomTimestepInfo,
+    n_steps: int,
+    n_atoms: int,
+    units: UnitSchemes = "MDANALYSIS",
+):
     """
     Get properties from frame data.
 
@@ -234,9 +252,15 @@ def _get_props(frame: MDGeomTimestepInfo, n_steps: int, n_atoms: int,
 
     return part_props, props
 
-def _create_groups(out_file: h5py.File, n_steps: int,
-                   species: set[str], atoms: list[str],
-                   frame: MDGeomTimestepInfo, units="MDANALYSIS"):
+
+def _create_groups(
+    out_file: h5py.File,
+    n_steps: int,
+    species: set[str],
+    atoms: list[str],
+    frame: MDGeomTimestepInfo,
+    units="MDANALYSIS",
+):
     """
     Create empty groups for filling with data.
 
@@ -276,7 +300,7 @@ def _create_groups(out_file: h5py.File, n_steps: int,
         box.attrs["dimension"] = 3
         box.attrs["boundary"] = "periodic"
         edge = box.create_group("edges")
-        edge["step"] = list(range(1, n_steps+1))
+        edge["step"] = list(range(1, n_steps + 1))
         edge.create_dataset("time", (n_steps,), dtype=float)
         edge["time"].attrs["unit"] = get_unit_name("time")
         edge.create_dataset("value", (n_steps, 3, 3), dtype=float)
@@ -292,8 +316,15 @@ def _create_groups(out_file: h5py.File, n_steps: int,
                 grp.create_dataset("value", size, dtype=float)
                 grp["value"].attrs["unit"] = unit
 
-def md_to_h5md(md_geom_file: Path, out_path: Path | str, units: str = "MDANALYSIS", *,
-               dump_config: bool = False, **metadata) -> None:
+
+def md_to_h5md(
+    md_geom_file: Path,
+    out_path: Path | str,
+    units: str = "MDANALYSIS",
+    *,
+    dump_config: bool = False,
+    **metadata,
+) -> None:
     """
     Convert an MD file to h5md format [1]_.
 
@@ -321,6 +352,7 @@ def md_to_h5md(md_geom_file: Path, out_path: Path | str, units: str = "MDANALYSI
         _create_groups(out_file, n_steps, species, atoms, parsed[0], units)
         _fill_groups(out_file, parsed, units)
 
+
 def get_parser(parser: SubParser | None = None) -> ArgumentParser:
     """Get the argument parser for this script."""
     arg_parser = main_or_sub_parser(
@@ -332,19 +364,42 @@ def get_parser(parser: SubParser | None = None) -> ArgumentParser:
     )
 
     arg_parser.add_argument("source", type=Path, help=".md file to parse")
-    arg_parser.add_argument("-o", "--output", type=Path,
-                            help="File to write output.", required=True)
-    arg_parser.add_argument("-a", "--author", type=str,
-                            help="Author for metadata.", default="Unknown")
-    arg_parser.add_argument("-e", "--email", type=str,
-                            help="Email for metadata.", default="Unknown")
-    arg_parser.add_argument("-u", "--units",
-                            choices=UNITS.keys(), default="MDANALYSIS",
-                            help="Select units for output h5md file")
-    arg_parser.add_argument("-x", "--dump-config", action="store_true",
-                            help="Dump initial configuration (for MDAnalysis). "
-                            "Dumps to output.with_suffix('.config').")
+    arg_parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        help="File to write output.",
+        required=True,
+    )
+    arg_parser.add_argument(
+        "-a",
+        "--author",
+        type=str,
+        help="Author for metadata.",
+        default="Unknown",
+    )
+    arg_parser.add_argument(
+        "-e",
+        "--email",
+        type=str,
+        help="Email for metadata.",
+        default="Unknown",
+    )
+    arg_parser.add_argument(
+        "-u",
+        "--units",
+        choices=UNITS.keys(),
+        default="MDANALYSIS",
+        help="Select units for output h5md file",
+    )
+    arg_parser.add_argument(
+        "-x",
+        "--dump-config",
+        action="store_true",
+        help="Dump initial configuration (for MDAnalysis). Dumps to output.with_suffix('.config').",
+    )
     return arg_parser
+
 
 @singledispatch
 def main(source, output, **metadata):
@@ -365,18 +420,28 @@ def main(source, output, **metadata):
     """
     raise NotImplementedError(f"Unable to convert {type(source).__name__} to h5md")
 
+
 @main.register(str)
 def _(source, output: Path | str, **metadata):
     main(Path(source), output, **metadata)
+
 
 @main.register(Path)
 def _(source, output: Path | str, **metadata):
     md_to_h5md(source, output, **metadata)
 
+
 @main.register(argparse.Namespace)
 def _(args):
-    main(args.source, args.output, units=args.units, dump_config=args.dump_config,
-         author=args.author, email=args.email)
+    main(
+        args.source,
+        args.output,
+        units=args.units,
+        dump_config=args.dump_config,
+        author=args.author,
+        email=args.email,
+    )
+
 
 def cli():
     """
@@ -392,6 +457,7 @@ def cli():
     arg_parser = get_parser()
     args = arg_parser.parse_args()
     main(args)
+
 
 _tool_ = Tool(arg_parser=get_parser, run=main)
 
