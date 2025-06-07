@@ -349,6 +349,7 @@ def md_to_h5md(
     atoms = [x[0] for x in parsed[0]["ions"]]
     species = set(atoms)
     n_steps = len(parsed)
+    out_path = Path(out_path)
 
     if dump_config:
         _dump_config(out_path.with_suffix(".config"), parsed[0])

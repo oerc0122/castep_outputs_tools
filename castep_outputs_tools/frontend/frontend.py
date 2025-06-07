@@ -2,6 +2,7 @@
 
 import argparse
 from argparse import _SubParsersAction as SubParser
+from collections.abc import Iterable
 from pkgutil import resolve_name, walk_packages
 
 import castep_outputs_tools
@@ -76,15 +77,19 @@ def main():
             continue
 
         try:
-            tool = resolve_name(package.name + ":_tool_")
+            tools = resolve_name(package.name + ":_tool_")
         except AttributeError:
             continue
 
-        if not isinstance(tool, Tool):
-            raise TypeError(
-                f"`_tool_` not defined as `Tool` class (received {type(tool).__name__}.",
-            )
-        main_to_sub_parser(subparser, tool)
+        if not isinstance(tools, Iterable):
+            tools = (tools,)
+
+        for tool in tools:
+            if not isinstance(tool, Tool):
+                raise TypeError(
+                    f"`_tool_` not defined as `Tool` class (received {type(tool).__name__}.",
+                )
+            main_to_sub_parser(subparser, tool)
 
     args = arg_parser.parse_args()
 

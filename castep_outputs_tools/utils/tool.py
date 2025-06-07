@@ -17,5 +17,5 @@ class Tool:
     """
 
     run: Callable[[Namespace], Any]
-    arg_parser: Callable[[SubParser | None], ArgumentParser]
+    arg_parser: Callable[[], ArgumentParser]
     aliases: Sequence[str] = ()
