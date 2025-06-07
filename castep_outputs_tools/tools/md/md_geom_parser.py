@@ -1,4 +1,5 @@
 """Lazy MD/Geom parser object."""
+
 from __future__ import annotations
 
 from collections.abc import Generator, Sequence

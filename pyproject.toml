@@ -38,9 +38,7 @@ tools = ["castep_outputs_tools[md_to_h5md, castep2ase]"]
 all = ["castep_outputs_tools[tools, lint, docs]"]
 
 [project.scripts]
-md_to_h5md = "castep_outputs_tools.md.md_to_h5md:cli"
-castep2ase = "castep_outputs_tools.castep.castep_to_ase:cli"
-castep2cell = "castep_outputs_tools.castep.castep_to_cell:cli"
+castep_tools = "castep_outputs_tools.frontend.frontend:main"
 
 [project.urls]
 Homepage="https://github.com/oerc0122/castep_outputs_tools"
