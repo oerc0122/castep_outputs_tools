@@ -46,6 +46,11 @@ Documentation = "https://oerc0122.github.io/castep_outputs_tools/"
 Repository="https://github.com/oerc0122/castep_outputs_tools.git"
 "Bug Tracker" = "https://github.com/oerc0122/castep_outputs_tools/issues"
 
+[project.entry-points."castep_outputs.tools"]
+castep_to_ase = "castep_outputs_tools.tools.castep.castep_to_ase:_tool_"
+castep_to_cell = "castep_outputs_tools.tools.castep.castep_to_cell:_tool_"
+md_to_h5md = "castep_outputs_tools.tools.md.md_to_h5md:_tool_"
+
 [tool.setuptools.dynamic]
 version = {attr = "castep_outputs_tools.__version__"}
 

@@ -1,7 +1,6 @@
 """Tool registry."""
 
 from argparse import ArgumentParser, Namespace
-from argparse import _SubParsersAction as SubParser
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any

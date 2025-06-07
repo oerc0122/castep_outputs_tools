@@ -160,7 +160,7 @@ def _run(args: argparse.Namespace) -> None:
 
     output = args.output if args.output else sys.stdout
 
-    main(file, output, fmt=fmt, frame=args.frame)
+    main(file, output, source_format=fmt, frame=args.frame)
 
 
 def cli() -> None:

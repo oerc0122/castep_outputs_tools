@@ -3,7 +3,7 @@
 import argparse
 from argparse import _SubParsersAction as SubParser
 from collections.abc import Iterable
-from pkgutil import resolve_name, walk_packages
+from importlib.metadata import entry_points
 
 import castep_outputs_tools
 import castep_outputs_tools.tools
@@ -18,40 +18,50 @@ def main_to_sub_parser(
 
     Parameters
     ----------
-    sub_parser : SubParser, optional
+    sub_parser : SubParser
         SubParser to add parser to.
-    parser : ArgumentParser
+    tool : Tool
         Parser to add.
-    aliases : Sequence[str]
-        Other names which might be used.
     """
-    parser = tool.arg_parser()
+    if not isinstance(tool, Tool):
+        raise TypeError(
+            f"`_tool_` not defined as `Tool` class (received {type(tool).__name__}.",
+        )
 
-    new_parser = sub_parser.add_parser(
+    parser = tool.arg_parser()
+    parser.set_defaults(func=tool.run)
+
+    sub_parser.add_parser(
         parser.prog,
-        usage=parser.usage,
-        description=parser.description,
-        help=parser.description,
-        epilog=parser.epilog,
-        formatter_class=parser.formatter_class,
-        prefix_chars=parser.prefix_chars,
-        fromfile_prefix_chars=parser.fromfile_prefix_chars,
-        argument_default=parser.argument_default,
-        conflict_handler=parser.conflict_handler,
-        add_help=parser.add_help,
-        allow_abbrev=parser.allow_abbrev,
-        exit_on_error=True,
         aliases=tool.aliases,
     )
-    new_parser._actions = parser._actions
-    new_parser.set_defaults(func=tool.run)
-    return new_parser
+
+    for key in (parser.prog, *tool.aliases):
+        sub_parser.choices[key] = parser
+
+
+def _get_tools(subparser: SubParser):
+    """Get tools and add them to subparser.
+
+    Parameters
+    ----------
+    subparser : SubParser
+        Parser to build.
+    """
+    for package in entry_points(group="castep_outputs.tools"):
+        tools = package.load()
+
+        if not isinstance(tools, Iterable):
+            tools = (tools,)
+
+        for tool in tools:
+            main_to_sub_parser(subparser, tool)
 
 
 def main():
     """User facing frontend.
 
-    Looks for a `Tool` type called `_tool_` in module.
+    Looks for tools defined in entry-points.
     """
     arg_parser = argparse.ArgumentParser(
         prog="castep_tools",
@@ -69,27 +79,7 @@ def main():
         help="Run script from castep_tools",
     )
 
-    for package in walk_packages(
-        castep_outputs_tools.tools.__path__,
-        castep_outputs_tools.tools.__name__ + ".",
-    ):
-        if package.ispkg:
-            continue
-
-        try:
-            tools = resolve_name(package.name + ":_tool_")
-        except AttributeError:
-            continue
-
-        if not isinstance(tools, Iterable):
-            tools = (tools,)
-
-        for tool in tools:
-            if not isinstance(tool, Tool):
-                raise TypeError(
-                    f"`_tool_` not defined as `Tool` class (received {type(tool).__name__}.",
-                )
-            main_to_sub_parser(subparser, tool)
+    _get_tools(subparser)
 
     args = arg_parser.parse_args()
 

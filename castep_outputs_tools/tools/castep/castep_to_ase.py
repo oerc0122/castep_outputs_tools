@@ -133,7 +133,7 @@ def _run(args: argparse.Namespace):
     if not file.exists():
         raise FileNotFoundError(f"File {file} not found.")
 
-    fmt = args.in_format if args.in_format else None
+    fmt = args.format if args.format else None
     atoms = main(file, fmt)
 
     write(args.output, atoms, args.out_format)
