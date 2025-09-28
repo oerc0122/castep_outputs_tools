@@ -40,22 +40,45 @@ def main_to_sub_parser(
         sub_parser.choices[key] = parser
 
 
-def _get_tools(subparser: SubParser):
-    """Get tools and add them to subparser.
+
+def _add_dummy_tool(sub_parser: SubParser, name: str):
+    parser = sub_parser.add_parser(
+        name,
+        description=(
+            "Currently unavailable due to missing dependencies, "
+            f"to use run:\n 'pip install \"castep_outputs[{name}]\"'"
+        ),
+    )
+
+    def dummy_function(*_):
+        print(
+            f"{name} - Currently unavailable due to missing dependencies, "
+            f"to use please run:\n 'pip install \"castep_outputs[{name}]\"'",
+        )
+
+    parser.set_defaults(func=dummy_function)
+
+
+def _get_tools(sub_parser: SubParser):
+    """Get tools and add them to sub_parser.
 
     Parameters
     ----------
-    subparser : SubParser
+    sub_parser : SubParser
         Parser to build.
     """
     for package in entry_points(group="castep_outputs.tools"):
-        tools = package.load()
+        try:
+            tools = package.load()
+        except ImportError:
+            _add_dummy_tool(sub_parser, package.name)
+            continue
 
         if not isinstance(tools, Iterable):
             tools = (tools,)
 
         for tool in tools:
-            main_to_sub_parser(subparser, tool)
+            main_to_sub_parser(sub_parser, tool)
 
 
 def main():
