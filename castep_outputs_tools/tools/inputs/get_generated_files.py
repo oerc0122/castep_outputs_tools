@@ -1,6 +1,7 @@
 """CLI Interface for getting generated files."""
 
 import argparse
+from collections.abc import Sequence
 from pathlib import Path
 from textwrap import indent
 
@@ -22,9 +23,9 @@ def get_parser():
     return arg_parser
 
 
-def cli():
+def cli(args: Sequence[str] | None = None):
     """Run from CLI."""
-    args = get_parser().parse_args()
+    args = get_parser().parse_args(args)
 
     for seed in args.seedname:
         print(seed.stem)

@@ -45,6 +45,7 @@ md_to_h5md = "castep_outputs_tools.md.md_to_h5md:cli"
 castep2force = "castep_outputs_tools.md.md_to_force:cli"
 castep2ase = "castep_outputs_tools.castep.castep_to_ase:cli"
 castep2cell = "castep_outputs_tools.castep.castep_to_cell:cli"
+get_generated_files = "castep_outputs_tools.tools.inputs.get_generated_files:cli"
 
 [project.urls]
 Homepage="https://github.com/oerc0122/castep_outputs_tools"
