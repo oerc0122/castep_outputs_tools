@@ -93,7 +93,7 @@ def _get_castep_struct(parsed: dict, frame: int = -1):
 def get_parser() -> ArgumentParser:
     """Get the argument parser for this script."""
     arg_parser = ArgumentParser(
-        prog="castep2cell",
+        prog="castep_to_cell",
         description="Simple .castep, .md, .geom to .cell tool.",
     )
 

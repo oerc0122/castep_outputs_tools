@@ -20,7 +20,7 @@ from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 from castep_outputs_tools import __version__
 from castep_outputs_tools.tools.md.md_geom_parser import MDGeomParser as parser
 from castep_outputs_tools.utils.tool import Tool
-from castep_outputs_tools.utils.unit_converter import UNITS, UnitSchemes, get_unit_name, set_units
+from castep_outputs_tools.utils.unit_converter import UnitSchemes, get_unit_name, set_units
 from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
 
 try:
@@ -30,13 +30,6 @@ except ImportError:
     def tqdm(x, *_args, **_kwargs):
         """Return dummy function for tqdm."""
         yield from x
-
-from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
-
-from castep_outputs_tools import __version__
-from castep_outputs_tools.md.md_geom_parser import MDGeomParser as parser
-from castep_outputs_tools.utils.unit_converter import UnitSchemes, get_unit_name, set_units
-from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
 
 
 def _dump_config(out_path: str | Path, frame: MDGeomTimestepInfo):
@@ -73,7 +66,7 @@ def _convert_frame(
     out_file: h5py.File,
     frame: MDGeomTimestepInfo,
     frame_id: int,
-    units: UnitSchemes = "MDANALYSIS",
+    units: UnitSchemes | str = UnitSchemes.MDANALYSIS,
 ):
     """
     Convert a single frame and fill the data blocks.
@@ -134,7 +127,7 @@ def _convert_frame(
 def _fill_groups(
     out_file: h5py.File,
     frames: list[MDGeomTimestepInfo],
-    units: UnitSchemes = "MDANALYSIS",
+    units: UnitSchemes | str = UnitSchemes.MDANALYSIS,
 ):
     """
     Convert frames and fill the data blocks.
@@ -219,7 +212,7 @@ def _get_props(
     frame: MDGeomTimestepInfo,
     n_steps: int,
     n_atoms: int,
-    units: UnitSchemes = "MDANALYSIS",
+    units: UnitSchemes | str = UnitSchemes.MDANALYSIS,
 ):
     """
     Get properties from frame data.
@@ -326,7 +319,7 @@ def _create_groups(
 def md_to_h5md(
     md_geom_file: Path,
     out_path: Path | str,
-    units: str = "MDANALYSIS",
+    units: UnitSchemes | str = UnitSchemes.MDANALYSIS,
     *,
     dump_config: bool = False,
     **metadata,
@@ -393,7 +386,7 @@ def get_parser() -> ArgumentParser:
     arg_parser.add_argument(
         "-u",
         "--units",
-        choices=UNITS.keys(),
+        choices=UnitSchemes.__members__.keys(),
         default="MDANALYSIS",
         help="Select units for output h5md file",
     )

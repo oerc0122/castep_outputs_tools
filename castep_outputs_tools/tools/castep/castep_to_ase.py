@@ -7,6 +7,7 @@ from typing import Literal
 
 from ase import Atoms
 from ase.io import write
+from ase.io.formats import ioformats
 from castep_outputs import parse_castep_file, parse_md_geom_file, parse_single
 from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
@@ -18,14 +19,24 @@ _PARSERS = {"castep": parse_castep_file, "md": parse_md_geom_file, "geom": parse
 def get_parser() -> ArgumentParser:
     """Get the argument parser for this script."""
     arg_parser = ArgumentParser(
-        prog="castep2ase",
+        prog="castep_to_ase",
         description="Simple .castep, .md, .geom to ASE format tool.",
     )
 
     arg_parser.add_argument("file", help="Source file to convert", type=Path)
-    arg_parser.add_argument("-o", "--output", help="File to dump to, default: screen", default=None)
+    arg_parser.add_argument("-o", "--output", help="File to dump to", required=True)
     arg_parser.add_argument(
-        "-f", "--format", help="Parse FILE as this type", choices=_PARSERS.keys(),
+        "-O",
+        "--out-format",
+        help="ASE format to dump to, default: %(default)s",
+        choices={key for key, val in ioformats.items() if val.can_write},
+        default=None,
+    )
+    arg_parser.add_argument(
+        "-f",
+        "--format",
+        help="Parse FILE as this type",
+        choices=_PARSERS.keys(),
     )
     arg_parser.add_argument("-F", "--frame", help="Parse given frame", type=int, default=-1)
 
@@ -136,7 +147,7 @@ def _run(args: argparse.Namespace):
     fmt = args.format if args.format else None
     atoms = main(file, fmt)
 
-    write(args.output, atoms, args.out_format)
+    write(filename=args.output, images=atoms, format=args.out_format)
 
 
 def cli():

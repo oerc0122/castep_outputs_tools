@@ -3,6 +3,7 @@
 import argparse
 from argparse import _SubParsersAction as SubParser
 from collections.abc import Iterable
+from functools import partial
 from importlib.metadata import entry_points
 
 import castep_outputs_tools
@@ -40,23 +41,23 @@ def main_to_sub_parser(
         sub_parser.choices[key] = parser
 
 
+def _dummy_function(name, *_):
+    print(
+        f"{name} - Currently unavailable due to missing dependencies, "
+        f"to use please run:\n 'pip install \"castep_outputs_tools[{name}]\"'",
+    )
+
 
 def _add_dummy_tool(sub_parser: SubParser, name: str):
     parser = sub_parser.add_parser(
         name,
         description=(
             "Currently unavailable due to missing dependencies, "
-            f"to use run:\n 'pip install \"castep_outputs[{name}]\"'"
+            f"to use run:\n 'pip install \"castep_outputs_tools[{name}]\"'"
         ),
     )
 
-    def dummy_function(*_):
-        print(
-            f"{name} - Currently unavailable due to missing dependencies, "
-            f"to use please run:\n 'pip install \"castep_outputs[{name}]\"'",
-        )
-
-    parser.set_defaults(func=dummy_function)
+    parser.set_defaults(func=partial(_dummy_function, name))
 
 
 def _get_tools(sub_parser: SubParser):
@@ -104,7 +105,14 @@ def main():
 
     _get_tools(subparser)
 
-    args = arg_parser.parse_args()
+    args, unknown_args = arg_parser.parse_known_args()
+
+    if (
+        unknown_args
+        and not isinstance(args.func, partial)
+        and args.func.func is not _dummy_function
+    ):
+        arg_parser.parse_args()
 
     if not args:
         arg_parser.print_help()
