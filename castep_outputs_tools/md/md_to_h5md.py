@@ -25,7 +25,7 @@ from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 from castep_outputs_tools import __version__
 from castep_outputs_tools.md.md_geom_parser import MDGeomParser as parser
-from castep_outputs_tools.utils.unit_converter import UNITS, UnitSchemes, get_unit_name, set_units
+from castep_outputs_tools.utils.unit_converter import UnitSchemes, get_unit_name, set_units
 from castep_outputs_tools.utils.unit_converter import convert_frame as convert_units
 
 
@@ -370,7 +370,8 @@ def cli():
                             help="Email for metadata.", default="Unknown")
     arg_parser.add_argument("-V", "--version", action="version", version=f"%(prog)s v{__version__}")
     arg_parser.add_argument("-u", "--units",
-                            choices=UNITS.keys(), default="MDANALYSIS",
+                            choices=UnitSchemes.__members__.keys(),
+                            default="MDANALYSIS",
                             help="Select units for output h5md file")
     arg_parser.add_argument("-x", "--dump-config", action="store_true",
                             help="Dump initial configuration (for MDAnalysis). "
