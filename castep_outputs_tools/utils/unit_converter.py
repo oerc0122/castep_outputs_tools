@@ -1,14 +1,21 @@
 """Units manager."""
+from __future__ import annotations
+
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Literal
+from enum import Enum
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
-from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 from castep_outputs.utilities.constants import TAG_ALIASES
 from castep_outputs.utilities.utility import add_aliases
 
-DIMENSIONS = Literal[
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
+
+Dimensions = Literal[
     "length",
     "force",
     "velocity",
@@ -17,7 +24,6 @@ DIMENSIONS = Literal[
     "energy",
     "time",
 ]
-UnitSchemes = Literal["ATOMIC", "CASTEP", "MDANALYSIS", "ELECTRONIC"]
 
 @dataclass(frozen=True)
 class Unit:
@@ -38,12 +44,12 @@ class UnitScheme:
     energy: Unit
     time: Unit
 
-    def get_name(self, key: DIMENSIONS) -> str:
+    def get_name(self, key: Dimensions) -> str:
         """Get name of unit for given dimension.
 
         Parameters
         ----------
-        key : DIMENSIONS
+        key : Dimensions
             Dimension to get name of.
 
         Returns
@@ -53,12 +59,12 @@ class UnitScheme:
         """
         return getattr(self, key).name
 
-    def get_fac(self, key: DIMENSIONS) -> float:
+    def get_fac(self, key: Dimensions) -> float:
         """Get atomic conversion factor of unit for given dimension.
 
         Parameters
         ----------
-        key : DIMENSIONS
+        key : Dimensions
             Dimension to get factor of.
 
         Returns
@@ -68,8 +74,8 @@ class UnitScheme:
         """
         return getattr(self, key).fac
 
-    def convert_to(self, value: float, key: DIMENSIONS, *,
-                   in_scheme: UnitSchemes = "ATOMIC",
+    def convert_to(self, value: float, key: Dimensions, *,
+                   in_scheme: str = "ATOMIC",
                    in_unit: str | None = None) -> float:
         """Convert a value in the given unit to the current scheme.
 
@@ -77,7 +83,7 @@ class UnitScheme:
         ----------
         value : float
             Value to convert.
-        key : DIMENSIONS
+        key : Dimensions
             Dimension on value.
         in_scheme : UnitSchemes
             Scheme units in.
@@ -95,15 +101,15 @@ class UnitScheme:
         1.8897268777743552
         """
         if in_unit is None:
-            in_unit = UNITS[in_scheme].get_name(key)
+            in_unit = UnitSchemes[in_scheme].value.get_name(key)
 
         return convert_value(value, in_unit, self.get_name(key))
 
     def convert_from(self,
                      value: float,
-                     key: DIMENSIONS,
+                     key: Dimensions,
                      *,
-                     out_scheme: UnitSchemes = "ATOMIC",
+                     out_scheme: str = "ATOMIC",
                      out_unit: str | None = None) -> float:
         """Convert a value in the current scheme to the given unit.
 
@@ -111,7 +117,7 @@ class UnitScheme:
         ----------
         value : float
             Value to convert.
-        key : DIMENSIONS
+        key : Dimensions
             Dimension on value.
         out_unit : str
             Unit to convert value to.
@@ -129,7 +135,7 @@ class UnitScheme:
         1e-10
         """
         if out_unit is None:
-            out_unit = UNITS[out_scheme].get_name(key)
+            out_unit = UnitSchemes[out_scheme].value.get_name(key)
 
         return convert_value(value, self.get_name(key), out_unit)
 
@@ -165,8 +171,11 @@ _units_from_atomic = {key: Unit(key, val)
                               "Pa": 2942.0427769057487*1e-9,
                       }.items()}
 
-UNITS = {
-    "ATOMIC": UnitScheme(
+
+class UnitSchemes(Enum):
+    """Available unit schemes."""
+
+    ATOMIC = UnitScheme(
         length=_units_from_atomic["a0"],
         force=_units_from_atomic["Ha a0-1"],
         velocity=_units_from_atomic["a0 aut-1"],
@@ -174,8 +183,8 @@ UNITS = {
         temperature=_units_from_atomic["Ha kB-1"],
         energy=_units_from_atomic["Ha"],
         time=_units_from_atomic["aut"],
-    ),
-    "CASTEP": UnitScheme(
+    )
+    CASTEP = UnitScheme(
         length=_units_from_atomic["Angstrom"],
         force=_units_from_atomic["eV Angstrom-1"],
         velocity=_units_from_atomic["Angstrom ps-1"],
@@ -183,8 +192,17 @@ UNITS = {
         temperature=_units_from_atomic["K"],
         energy=_units_from_atomic["eV"],
         time=_units_from_atomic["ps"],
-    ),
-    "ELECTRONIC": UnitScheme(
+    )
+    POTFIT = UnitScheme(
+        length=_units_from_atomic["Angstrom"],
+        force=_units_from_atomic["eV Angstrom-1"],
+        velocity=_units_from_atomic["Angstrom ps-1"],
+        stress=_units_from_atomic["eV Angstrom-3"],
+        temperature=_units_from_atomic["K"],
+        energy=_units_from_atomic["eV"],
+        time=_units_from_atomic["ps"],
+    )
+    ELECTRONIC = UnitScheme(
         length=_units_from_atomic["Angstrom"],
         force=_units_from_atomic["eV Angstrom-1"],
         velocity=_units_from_atomic["Angstrom fs-1"],
@@ -192,8 +210,8 @@ UNITS = {
         temperature=_units_from_atomic["K"],
         energy=_units_from_atomic["eV"],
         time=_units_from_atomic["fs"],
-    ),
-    "MDANALYSIS": UnitScheme(
+    )
+    MDANALYSIS = UnitScheme(
         length=_units_from_atomic["Angstrom"],
         force=_units_from_atomic["kJ mol-1 Angstrom-1"],
         velocity=_units_from_atomic["Angstrom ps-1"],
@@ -201,8 +219,8 @@ UNITS = {
         temperature=_units_from_atomic["K"],
         energy=_units_from_atomic["kJ mol-1"],
         time=_units_from_atomic["ps"],
-    ),
-    "SI": UnitScheme(
+    )
+    SI = UnitScheme(
         length=_units_from_atomic["m"],
         force=_units_from_atomic["N"],
         velocity=_units_from_atomic["m s-1"],
@@ -210,9 +228,7 @@ UNITS = {
         temperature=_units_from_atomic["K"],
         energy=_units_from_atomic["J"],
         time=_units_from_atomic["s"],
-    ),
-
-}
+    )
 
 
 MD_PROP_UNITS = {
@@ -233,17 +249,22 @@ MD_PROP_UNITS = {
 add_aliases(MD_PROP_UNITS, TAG_ALIASES)
 
 # Singleton config
-UNIT_SCHEME: UnitSchemes = "MDANALYSIS"
+UNIT_SCHEME: UnitScheme = UnitSchemes.MDANALYSIS.value
 
 @contextmanager
-def set_units(units: UnitSchemes = None):
+def set_units(units: UnitSchemes | str | None = None) -> Iterator[UnitScheme]:
     """Stable context manager for handling temporary unit setting."""
     global UNIT_SCHEME  # noqa: PLW0603
     units_bak = UNIT_SCHEME
     try:
-        if units is not None:
-            UNIT_SCHEME = units
-        yield UNITS[UNIT_SCHEME]
+        if units is None:
+            yield UNIT_SCHEME
+        elif isinstance(units, str):
+            units = UnitSchemes[units]
+            yield units.value
+        else:
+            yield units.value
+
     finally:
         if units is not None:
             UNIT_SCHEME = units_bak
@@ -252,17 +273,17 @@ def get_conv_fac(key: str) -> float:
     """Get the conversion factor for the given unit."""
     return _units_from_atomic[key].fac
 
-def get_unit_fac(key: DIMENSIONS) -> float:
+def get_unit_fac(key: Dimensions) -> float:
     """Get the factor of the given unit, for the current unit scheme."""
-    return UNITS[UNIT_SCHEME].get_fac(key)
+    return UNIT_SCHEME.get_fac(key)
 
-def get_unit_name(key: DIMENSIONS) -> str:
+def get_unit_name(key: Dimensions) -> str:
     """Get the name of the given unit, for the current unit scheme.
 
     Parameters
     ----------
-    key : str
-        Dimension
+    key : Dimensions
+        Dimension.
 
     Returns
     -------
@@ -275,7 +296,7 @@ def get_unit_name(key: DIMENSIONS) -> str:
     ...     get_unit_name("length")
     'a0'
     """
-    return UNITS[UNIT_SCHEME].get_name(key)
+    return UNIT_SCHEME.get_name(key)
 
 def convert_value(value: float, unit_from: str, unit_to: str) -> float:
     """Convert a value between unit sets.
@@ -294,7 +315,7 @@ def convert_value(value: float, unit_from: str, unit_to: str) -> float:
     """
     return value * get_conv_fac(unit_from) / get_conv_fac(unit_to)
 
-def convert_frame(frame: MDGeomTimestepInfo, units: UnitSchemes = None):
+def convert_frame(frame: MDGeomTimestepInfo, units: UnitSchemes | str | None = None) -> MDGeomTimestepInfo:
     """Convert all the units of an MD frame."""
     with set_units(units) as scheme:
         data = {key: scheme.convert_to(np.array(val), MD_PROP_UNITS[key])
