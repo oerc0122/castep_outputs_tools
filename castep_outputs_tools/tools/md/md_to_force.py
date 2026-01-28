@@ -17,16 +17,19 @@ import tarfile
 import tempfile
 import zipfile
 from collections import Counter
-from collections.abc import Generator, Sequence
 from functools import singledispatch
 from io import StringIO
 from pathlib import Path
-from typing import SupportsIndex, TextIO
+from typing import TYPE_CHECKING, SupportsIndex, TextIO
 
-from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
-
-from castep_outputs_tools.md.md_geom_parser import MDGeomParser
+from castep_outputs_tools.tools.md.md_geom_parser import MDGeomParser
+from castep_outputs_tools.utils.tool import Tool
 from castep_outputs_tools.utils.unit_converter import convert_frame
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
+
+    from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 
 class PotParser(argparse.Action):
@@ -38,7 +41,7 @@ class PotParser(argparse.Action):
         setattr(namespace, self.dest, out)
 
 
-def parse_args(args: list[str] | None = None) -> argparse.Namespace:
+def get_parser() -> argparse.ArgumentParser:
     """Parse incoming CLI arguments."""
     arg_parser = argparse.ArgumentParser(
         description=(
@@ -88,7 +91,7 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         help="Only use the final configuration in each file (overrides --frames).",
     )
 
-    return arg_parser.parse_args(args)
+    return arg_parser
 
 
 def conf_to_potfit(frame: MDGeomTimestepInfo, potentials: dict[str, float]) -> str:
@@ -210,12 +213,14 @@ def _(
 
 def cli(args: list[str] | None = None) -> None:
     """Convert a castep MD output file (or set of files) to a potfit force configuration file."""
-    args = parse_args(args)
+    parser = get_parser()
+    args = parser.parse_args(args)
 
     frames = [-1] if args.final else args.frames
 
     main(args.output, args.files, args.potential, frames)
 
+_tool_ = Tool(arg_parser=get_parser, run=main, aliases=["potfit"])
 
 if __name__ == "__main__":
     cli()

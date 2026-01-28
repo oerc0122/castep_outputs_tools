@@ -33,21 +33,23 @@ docs = ["sphinx>=0.13.1", "sphinx-book-theme>=0.3.3", "sphinx-argparse>=0.4.0", 
 lint = ["ruff"]
 test = ["pytest==8.3.4", "pytest-cov==5.0.0"]
 md_to_h5md = ["h5py", "numpy"]
-castep2ase = ["ase"]
-tools = ["castep_outputs_tools[md_to_h5md, castep2ase]"]
+castep_to_ase = ["ase"]
+tools = ["castep_outputs_tools[md_to_h5md, castep_to_ase]"]
 all = ["castep_outputs_tools[tools, lint, docs]"]
 
 [project.scripts]
-md_to_h5md = "castep_outputs_tools.md.md_to_h5md:cli"
-castep2force = "castep_outputs_tools.md.md_to_force:cli"
-castep2ase = "castep_outputs_tools.castep.castep_to_ase:cli"
-castep2cell = "castep_outputs_tools.castep.castep_to_cell:cli"
+castep_tools = "castep_outputs_tools.frontend.frontend:main"
 
 [project.urls]
 Homepage="https://github.com/oerc0122/castep_outputs_tools"
 Documentation = "https://oerc0122.github.io/castep_outputs_tools/"
 Repository="https://github.com/oerc0122/castep_outputs_tools.git"
 "Bug Tracker" = "https://github.com/oerc0122/castep_outputs_tools/issues"
+
+[project.entry-points."castep_outputs.tools"]
+castep_to_ase = "castep_outputs_tools.tools.castep.castep_to_ase:_tool_"
+castep_to_cell = "castep_outputs_tools.tools.castep.castep_to_cell:_tool_"
+md_to_h5md = "castep_outputs_tools.tools.md.md_to_h5md:_tool_"
 
 [tool.setuptools.dynamic]
 version = {attr = "castep_outputs_tools.__version__"}

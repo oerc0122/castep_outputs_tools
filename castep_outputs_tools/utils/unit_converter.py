@@ -28,6 +28,7 @@ Dimensions = Literal[
 ]
 
 
+
 @dataclass(frozen=True)
 class Unit:
     """Basic unit holder."""
@@ -266,6 +267,7 @@ add_aliases(MD_PROP_UNITS, TAG_ALIASES)
 UNIT_SCHEME: UnitScheme = UnitSchemes.MDANALYSIS.value
 
 
+
 @contextmanager
 def set_units(units: UnitSchemes | str | None = None) -> Iterator[UnitScheme]:
     """Stable context manager for handling temporary unit setting."""
@@ -275,7 +277,9 @@ def set_units(units: UnitSchemes | str | None = None) -> Iterator[UnitScheme]:
         if units is None:
             units = UNIT_SCHEME
         if isinstance(units, str):
-            units = UnitSchemes[units].value
+            units = UnitSchemes[units]
+        if isinstance(units, UnitSchemes):
+            units = units.value
         UNIT_SCHEME = units
         yield UNIT_SCHEME
 
