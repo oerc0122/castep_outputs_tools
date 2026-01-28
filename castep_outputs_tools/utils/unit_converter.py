@@ -1,12 +1,14 @@
 """Units manager."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
+import numpy.typing as npt
 from castep_outputs.utilities.constants import TAG_ALIASES
 from castep_outputs.utilities.utility import add_aliases
 
@@ -25,12 +27,14 @@ Dimensions = Literal[
     "time",
 ]
 
+
 @dataclass(frozen=True)
 class Unit:
     """Basic unit holder."""
 
     name: str
     fac: float
+
 
 @dataclass(frozen=True)
 class UnitScheme:
@@ -74,9 +78,14 @@ class UnitScheme:
         """
         return getattr(self, key).fac
 
-    def convert_to(self, value: float, key: Dimensions, *,
-                   in_scheme: str = "ATOMIC",
-                   in_unit: str | None = None) -> float:
+    def convert_to(
+        self,
+        value: float | npt.NDArray[np.floating],
+        key: Dimensions,
+        *,
+        in_scheme: str = "ATOMIC",
+        in_unit: str | None = None,
+    ) -> float | npt.NDArray[np.floating]:
         """Convert a value in the given unit to the current scheme.
 
         Parameters
@@ -97,7 +106,7 @@ class UnitScheme:
 
         Examples
         --------
-        >>> UNITS["CASTEP"].convert_to(1., "length")
+        >>> UnitSchemes.CASTEP.value.convert_to(1., "length")
         1.8897268777743552
         """
         if in_unit is None:
@@ -105,12 +114,14 @@ class UnitScheme:
 
         return convert_value(value, in_unit, self.get_name(key))
 
-    def convert_from(self,
-                     value: float,
-                     key: Dimensions,
-                     *,
-                     out_scheme: str = "ATOMIC",
-                     out_unit: str | None = None) -> float:
+    def convert_from(
+        self,
+        value: float | npt.NDArray[np.floating],
+        key: Dimensions,
+        *,
+        out_scheme: str = "ATOMIC",
+        out_unit: str | None = None,
+    ) -> float | npt.NDArray[np.floating]:
         """Convert a value in the current scheme to the given unit.
 
         Parameters
@@ -129,9 +140,9 @@ class UnitScheme:
 
         Examples
         --------
-        >>> UNITS["CASTEP"].convert_from(1., "length")
+        >>> UnitSchemes.CASTEP.value.convert_from(1., "length")
         0.529177
-        >>> UNITS["CASTEP"].convert_from(1., "length", out_unit="m")
+        >>> UnitSchemes.CASTEP.value.convert_from(1., "length", out_unit="m")
         1e-10
         """
         if out_unit is None:
@@ -139,37 +150,40 @@ class UnitScheme:
 
         return convert_value(value, self.get_name(key), out_unit)
 
-_units_from_atomic = {key: Unit(key, val)
-                      for key, val in {
-                              "Angstrom fs-1": 0.002187690392268886,
-                              "Angstrom ps-1": 2.187690392268886,
-                              "Angstrom": 0.529177,
-                              "m_e": 1.,
-                              "GPa": 2942.0427769057487,
-                              "Ha a0-1": 1.,
-                              "Ha a0-3": 1.,
-                              "Ha kB-1": 1.,
-                              "Ha": 1.,
-                              "K": 31577.50248,
-                              "a0 aut-1": 1.,
-                              "a0": 1.,
-                              "aut": 1.,
-                              "eV Angstrom-1": 51.421,
-                              "eV Angstrom-3": 183.6278707918808,
-                              "eV": 27.211386245988,
-                              "fs": 241.8884326,
-                              "kJ mol-1 Angstrom-1": 0.5329426703,
-                              "kJ mol-1 Angstrom-3": 1.9031743412482902,
-                              "kJ mol-1": 0.2820269704692934,
-                              "ps": 241888.4326,
-                              "m": 5.29177e9,
-                              "kg": 1.0977691e30,
-                              "s": 241.8884326 * 1e15,
-                              "J": 2.2937123e17,
-                              "N": 12137802.6528,
-                              "m s-1": 4.57102891e-7,
-                              "Pa": 2942.0427769057487*1e-9,
-                      }.items()}
+
+_units_from_atomic = {
+    key: Unit(key, val)
+    for key, val in {
+        "Angstrom fs-1": 0.002187690392268886,
+        "Angstrom ps-1": 2.187690392268886,
+        "Angstrom": 0.529177,
+        "m_e": 1.0,
+        "GPa": 2942.0427769057487,
+        "Ha a0-1": 1.0,
+        "Ha a0-3": 1.0,
+        "Ha kB-1": 1.0,
+        "Ha": 1.0,
+        "K": 31577.50248,
+        "a0 aut-1": 1.0,
+        "a0": 1.0,
+        "aut": 1.0,
+        "eV Angstrom-1": 51.421,
+        "eV Angstrom-3": 183.6278707918808,
+        "eV": 27.211386245988,
+        "fs": 241.8884326,
+        "kJ mol-1 Angstrom-1": 0.5329426703,
+        "kJ mol-1 Angstrom-3": 1.9031743412482902,
+        "kJ mol-1": 0.2820269704692934,
+        "ps": 241888.4326,
+        "m": 5.29177e9,
+        "kg": 1.0977691e30,
+        "s": 241.8884326 * 1e15,
+        "J": 2.2937123e17,
+        "N": 12137802.6528,
+        "m s-1": 4.57102891e-7,
+        "Pa": 2942.0427769057487 * 1e-9,
+    }.items()
+}
 
 
 class UnitSchemes(Enum):
@@ -251,6 +265,7 @@ add_aliases(MD_PROP_UNITS, TAG_ALIASES)
 # Singleton config
 UNIT_SCHEME: UnitScheme = UnitSchemes.MDANALYSIS.value
 
+
 @contextmanager
 def set_units(units: UnitSchemes | str | None = None) -> Iterator[UnitScheme]:
     """Stable context manager for handling temporary unit setting."""
@@ -258,24 +273,26 @@ def set_units(units: UnitSchemes | str | None = None) -> Iterator[UnitScheme]:
     units_bak = UNIT_SCHEME
     try:
         if units is None:
-            yield UNIT_SCHEME
-        elif isinstance(units, str):
-            units = UnitSchemes[units]
-            yield units.value
-        else:
-            yield units.value
+            units = UNIT_SCHEME
+        if isinstance(units, str):
+            units = UnitSchemes[units].value
+        UNIT_SCHEME = units
+        yield UNIT_SCHEME
 
     finally:
         if units is not None:
             UNIT_SCHEME = units_bak
 
+
 def get_conv_fac(key: str) -> float:
     """Get the conversion factor for the given unit."""
     return _units_from_atomic[key].fac
 
+
 def get_unit_fac(key: Dimensions) -> float:
     """Get the factor of the given unit, for the current unit scheme."""
     return UNIT_SCHEME.get_fac(key)
+
 
 def get_unit_name(key: Dimensions) -> str:
     """Get the name of the given unit, for the current unit scheme.
@@ -298,7 +315,12 @@ def get_unit_name(key: Dimensions) -> str:
     """
     return UNIT_SCHEME.get_name(key)
 
-def convert_value(value: float, unit_from: str, unit_to: str) -> float:
+
+def convert_value(
+    value: float | npt.NDArray[np.floating],
+    unit_from: str,
+    unit_to: str,
+) -> float | npt.NDArray[np.floating]:
     """Convert a value between unit sets.
 
     Parameters
@@ -315,19 +337,29 @@ def convert_value(value: float, unit_from: str, unit_to: str) -> float:
     """
     return value * get_conv_fac(unit_from) / get_conv_fac(unit_to)
 
-def convert_frame(frame: MDGeomTimestepInfo, units: UnitSchemes | str | None = None) -> MDGeomTimestepInfo:
+
+def convert_frame(
+    frame: MDGeomTimestepInfo,
+    units: UnitSchemes | str | None = None,
+) -> MDGeomTimestepInfo:
     """Convert all the units of an MD frame."""
     with set_units(units) as scheme:
-        data = {key: scheme.convert_to(np.array(val), MD_PROP_UNITS[key])
-                for key, val in frame.items()
-                if key == "time" or key in TAG_ALIASES}
-        data["ions"] = {ion: {key: scheme.convert_to(np.array(val), MD_PROP_UNITS[key])
-                              for key, val in data.items()
-                              if key in TAG_ALIASES}
-                        for ion, data in frame["ions"].items()}
+        data = {
+            key: scheme.convert_from(np.array(val), MD_PROP_UNITS[key])
+            for key, val in frame.items()
+            if key == "time" or key in TAG_ALIASES
+        }
+        data["ions"] = {
+            ion: {
+                key: scheme.convert_from(np.array(val), MD_PROP_UNITS[key])
+                for key, val in data.items()
+                if key in TAG_ALIASES
+            }
+            for ion, data in frame["ions"].items()
+        }
 
     add_aliases(data, TAG_ALIASES)
     for ion in data["ions"].values():
         add_aliases(ion, TAG_ALIASES)
 
-    return data
+    return cast("MDGeomTimestepInfo", data)

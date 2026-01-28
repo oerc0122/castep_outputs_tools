@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Generator, Sequence
 from functools import singledispatchmethod
 from pathlib import Path
+from warnings import warn
 
 from castep_outputs.parsers.md_geom_file_parser import (
     MDGeomTimestepInfo,
@@ -18,7 +19,12 @@ class MDGeomParser:
     def __init__(self, md_geom_file: Path | str):
         self._next_frame = 0
 
-        self.file = Path(md_geom_file).expanduser()
+        if isinstance(md_geom_file, str):
+            md_geom_file = Path(md_geom_file)
+        if isinstance(md_geom_file, Path):
+            md_geom_file = md_geom_file.expanduser()
+
+        self.file = md_geom_file
 
         if not self.file.exists() or not self.file.is_file():
             raise FileNotFoundError(f"Cannot open file ({self.file.absolute()}).")
@@ -38,12 +44,12 @@ class MDGeomParser:
         len_est = (stat.st_size - self._start) / self._byte_len
 
         if not len_est.is_integer():
-            print(f"""\
-WARNING: Number of frames estimate is non-integral ({len_est}).
+            warn(f"""
+Number of frames estimate is non-integral ({len_est}).
 This may have been caused by manually modifying the file.
 
 While iteration should work, extracting particular frames may not.
-""")
+""", Warning, stacklevel=2)
 
         self._len = int(len_est)
 
@@ -117,7 +123,7 @@ While iteration should work, extracting particular frames may not.
     @__getitem__.register(slice)
     def _(self, frames) -> list[MDGeomTimestepInfo]:
         """Get particular frame of md/geom."""
-        range_ = frames.start or 0, frames.stop or len(self), frames.step or 1
+        range_ = frames.indices(len(self))
 
         return self[range(*range_)]
 
