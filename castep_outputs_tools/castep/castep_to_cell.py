@@ -120,7 +120,7 @@ def main(
             source = Path(source)
 
         name = str(source)
-        fmt: Parsers = source_format if source_format is not None else source.suffix[1:]
+        fmt: Parsers = source_format or source.suffix[1:]
 
     if fmt not in _PARSERS:
         raise OSError(f"Do not know how to parse '{fmt}' file.")
@@ -150,11 +150,11 @@ def cli():
     if not file.exists():
         raise FileNotFoundError(f"File {file} not found.")
 
-    fmt = args.format if args.format else args.file.suffix[1:]
+    fmt = args.format or args.file.suffix[1:]
     if fmt not in _PARSERS:
         raise OSError(f"Do not know how to parse '{fmt}' file.")
 
-    output = args.output if args.output else sys.stdout
+    output = args.output or sys.stdout
 
     main(file, output, fmt=fmt, frame=args.frame)
 

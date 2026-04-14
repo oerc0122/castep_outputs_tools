@@ -97,7 +97,7 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
 
 def main(source: Path, source_format: Literal["geom", "md", "castep", None] = None) -> Atoms:
     """Convert a CASTEP output file into an ASE atoms object."""
-    fmt = source_format if source_format else source.suffix[1:]
+    fmt = source_format or source.suffix[1:]
     if fmt not in _PARSERS:
         raise OSError(f"Do not know how to parse '{fmt}' file.")
 
@@ -106,7 +106,7 @@ def main(source: Path, source_format: Literal["geom", "md", "castep", None] = No
 
     if fmt in ("geom", "md"):
         atoms = _get_md_geom_struct(parsed)
-    elif fmt in ("castep",):
+    elif fmt == "castep":
         atoms, _ = _get_castep_struct(parsed)
 
     return atoms
@@ -120,7 +120,7 @@ def cli():
     if not file.exists():
         raise FileNotFoundError(f"File {file} not found.")
 
-    fmt = args.in_format if args.in_format else None
+    fmt = args.in_format or None
     atoms = main(file, fmt)
 
     write(args.output, atoms, args.out_format)
