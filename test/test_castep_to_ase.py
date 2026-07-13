@@ -1,7 +1,9 @@
 from pathlib import Path
 
-import numpy as np
 import pytest
+
+np = pytest.importorskip("numpy")
+
 from castep_outputs import parse_cell_param_file
 
 from castep_outputs_tools.castep.castep_to_ase import main as castep_to_ase
