@@ -28,10 +28,13 @@ classifiers = [
 ]
 dependencies=["castep_outputs>=0.1.8"]
 
-[project.optional-dependencies]
+[dependency-groups]
 docs = ["sphinx>=0.13.1", "sphinx-book-theme>=0.3.3", "sphinx-argparse>=0.4.0", "sphinx-autodoc-typehints"]
 lint = ["ruff"]
 test = ["pytest==8.3.4", "pytest-cov==5.0.0"]
+dev = [{include-group="lint"}, {include-group="test"}]
+
+[project.optional-dependencies]
 md_to_h5md = ["h5py", "numpy"]
 castep2ase = ["ase"]
 tools = ["castep_outputs_tools[md_to_h5md, castep2ase]"]

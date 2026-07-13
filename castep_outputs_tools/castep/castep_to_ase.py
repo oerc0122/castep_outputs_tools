@@ -36,7 +36,7 @@ def _parse_args() -> argparse.Namespace:
 def _get_md_geom_struct(parsed: MDGeomTimestepInfo) -> Atoms:
     """Construct atoms from .md or .geom."""
     return Atoms(
-        symbols=[symbol for symbol, ind in parsed["ions"]],
+        symbols=[symbol for symbol, _ind in parsed["ions"]],
         positions=[ion["R"] for ion in parsed["ions"].values()],
         velocities=([ion["V"] for ion in parsed["ions"].values()]
                     if "V" in next(iter(parsed["ions"].values())) else None),
@@ -57,7 +57,7 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
 
         data = parsed["geom_opt"]["final_configuration"]
 
-        atoms = Atoms(symbols=[symbol for symbol, ind in parsed["initial_positions"]],
+        atoms = Atoms(symbols=[symbol for symbol, _ind in parsed["initial_positions"]],
                       scaled_positions=(list(data["atoms"].values())
                                         if "atoms" in data else
                                         list(parsed["initial_positions"].values())),
@@ -73,7 +73,7 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
 
         print(list(data["positions"].values()))
 
-        atoms = Atoms(symbols=[symbol for symbol, ind in data["positions"]],
+        atoms = Atoms(symbols=[symbol for symbol, _ind in data["positions"]],
                       scaled_positions=list(data["positions"].values()),
                       cell=(data["cell"]["real_lattice"]
                             if "cell" in data else
@@ -84,7 +84,7 @@ def _get_castep_struct(parsed: dict) -> tuple[Atoms, str]:
     else:
         source = "Initial positions"
 
-        atoms = Atoms(symbols=[symbol for symbol, ind in parsed["initial_positions"]],
+        atoms = Atoms(symbols=[symbol for symbol, _ind in parsed["initial_positions"]],
                       scaled_positions=list(parsed["initial_positions"].values()),
                       cell=parsed["initial_cell"]["real_lattice"],
                       velocities=(list(parsed["initial_velocities"].values())
@@ -104,10 +104,11 @@ def main(source: Path, source_format: Literal["geom", "md", "castep", None] = No
     # We always want the last data
     parsed = parse_single(source, parser=_PARSERS[fmt])[-1]
 
-    if fmt in ("geom", "md"):
-        atoms = _get_md_geom_struct(parsed)
-    elif fmt == "castep":
-        atoms, _ = _get_castep_struct(parsed)
+    match fmt:
+        case "geom" | "md":
+            atoms = _get_md_geom_struct(parsed)
+        case "castep":
+            atoms, _ = _get_castep_struct(parsed)
 
     return atoms
 
