@@ -17,16 +17,19 @@ import tarfile
 import tempfile
 import zipfile
 from collections import Counter
-from collections.abc import Generator, Sequence
 from functools import singledispatch
 from io import StringIO
 from pathlib import Path
-from typing import SupportsIndex, TextIO
+from typing import TYPE_CHECKING, SupportsIndex, TextIO
 
-from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
+from castep_outputs.tools.md_geom_parser import MDGeomParser
 
-from castep_outputs_tools.md.md_geom_parser import MDGeomParser
 from castep_outputs_tools.utils.unit_converter import convert_frame
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Sequence
+
+    from castep_outputs.parsers.md_geom_file_parser import MDGeomTimestepInfo
 
 
 class PotParser(argparse.Action):

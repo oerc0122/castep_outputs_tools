@@ -3,7 +3,7 @@ from zipfile import ZipFile
 import tarfile
 from pathlib import Path
 
-from castep_outputs_tools.md.md_geom_parser import MDGeomParser
+from castep_outputs.tools.md_geom_parser import MDGeomParser
 from castep_outputs_tools.md import md_to_force
 
 SELF_DIR = Path(__file__).parent
